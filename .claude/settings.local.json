@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh repo:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(pandoc \"C:\\\\Users\\\\Volk\\\\Desktop\\\\Projects\\\\онтология\\\\ontology_essay.docx\" -o /tmp/ontology.md)",
+      "Read(//tmp/**)",
+      "Bash(python \"C:\\\\Users\\\\Volk\\\\AppData\\\\Roaming\\\\Claude\\\\local-agent-mode-sessions\\\\skills-plugin\\\\5bc9e208-03d7-4d51-957f-72ec9a05c834\\\\b2b85b31-ce7e-4582-9ada-cedf6de61a56\\\\skills\\\\docx\\\\scripts\\\\office\\\\unpack.py\" \"C:\\\\Users\\\\Volk\\\\Desktop\\\\Projects\\\\онтология\\\\ontology_essay.docx\" /tmp/ontology_unpacked/)",
+      "Bash(pip install:*)",
+      "Read(//c/Users/Volk/AppData/Local/Temp/ontology_unpacked/word/**)",
+      "Read(//c//**)",
+      "Bash(python -c \":*)",
+      "Bash(wc -l C:/git/Commit_Labs/articles/*.md C:/git/Commit_Labs/projects/README.md)",
+      "WebSearch"
+    ]
+  }
+}
