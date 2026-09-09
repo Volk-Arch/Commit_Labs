@@ -68,3 +68,42 @@ def run(gap, seeds, k=4, alpha=1.5, n_bg=2500, mass=200):
         d_bc = f_abc - f_a             # вклад обоих
         rows.append((f_a, f_ab, f_ac, f_abc, d_b, d_c, d_bc, d_b + d_c))
     return np.array(rows) if rows else None
+
+
+def main():
+    ap = argparse.ArgumentParser(
+        description="Три тела: складываются ли влияния (проверка суперпозиции)")
+    ap.add_argument('--gap', type=float, default=0.45,
+                    help='сторона треугольника между телами')
+    ap.add_argument('--seeds', type=int, default=5)
+    ap.add_argument('--k', type=int, default=4)
+    ap.add_argument('--alpha', type=float, default=1.5)
+    ap.add_argument('--bg', type=int, default=2500, help='событий фона')
+    ap.add_argument('--mass', type=int, default=200, help='событий в теле')
+    a = ap.parse_args()
+
+    print(f'три тела, сторона {a.gap}, масса {a.mass}, фон {a.bg}, '
+          f'{a.k} шкал, alpha={a.alpha}, {a.seeds} затравок')
+    print()
+    A = run(a.gap, a.seeds, a.k, a.alpha, a.bg, a.mass)
+    if A is None:
+        print('  ни одной удачной затравки — увеличьте --bg или --mass')
+        return
+    names = ['поле A', 'A+B', 'A+C', 'A+B+C',
+             'вклад B', 'вклад C', 'вклад B+C', 'сумма вкладов']
+    print(f"{'величина':>16}{'среднее':>12}{'ошибка':>10}")
+    for i, nm in enumerate(names):
+        v = A[:, i]
+        print(f'{nm:>16}{v.mean():>12.4f}{v.std()/max(len(v)**0.5, 1):>10.4f}')
+    real = A[:, 6].mean()
+    summ = A[:, 7].mean()
+    print()
+    print(f'  вклад обоих тел вместе: {real:+.4f}')
+    print(f'  сумма отдельных вкладов: {summ:+.4f}')
+    print(f'  относительное отклонение: {abs(real-summ)/max(abs(real), 1e-12):.3f}')
+    print()
+    print('  малое отклонение = влияния СКЛАДЫВАЮТСЯ (суперпозиция)')
+
+
+if __name__ == '__main__':
+    main()
