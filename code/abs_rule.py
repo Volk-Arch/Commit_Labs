@@ -1,6 +1,6 @@
-import sys; sys.path.insert(0, '/mnt/user-data/outputs')
+import sys, os; _HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, _HERE)
 import numpy as np
-exec(open('/home/claude/movingwaves.py').read())
+exec(open(os.path.join(_HERE, 'movingwaves.py'), encoding='utf-8').read())
 
 def rel_absolute(X, thresh=0.5):
     """Правило, чувствительное к АБСОЛЮТНОЙ фазе, а не только к разности.

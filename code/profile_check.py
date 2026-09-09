@@ -2,7 +2,7 @@ import numpy as np
 from itertools import combinations
 from math import gamma
 from scipy.optimize import brentq
-import sys; sys.path.insert(0, '/home/claude')
+import sys, os; _HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, _HERE)
 from layer3 import find_defects
 from interval_orient import interval, interval_frame
 

@@ -11,9 +11,12 @@
 Слева — настоящее тройное поле, справа — сумма парных.
 """
 import argparse
-import numpy as np
 import sys
-sys.path.insert(0, '/home/claude')
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")      # Windows: консоль cp1251
+    sys.stderr.reconfigure(encoding="utf-8")
+import numpy as np
+import sys, os; _HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, _HERE)
 from twobody import local_density, metric, causal_order, direct_links, field_at
 
 

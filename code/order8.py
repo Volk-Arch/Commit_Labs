@@ -76,6 +76,10 @@
 пять следствий, всё счётом.
 """
 
+import sys
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")      # Windows: консоль cp1251
+    sys.stderr.reconfigure(encoding="utf-8")
 import numpy as np
 from math import gamma
 from scipy.optimize import brentq

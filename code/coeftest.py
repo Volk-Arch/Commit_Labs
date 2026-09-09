@@ -1,5 +1,5 @@
 import numpy as np, gc, sys
-sys.path.insert(0,'/home/claude')
+import sys, os; _HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, _HERE)
 from bigworld import sprinkle, interval_of
 
 def coef(N, lo, hi, want, sd, warps=(0,40,120)):

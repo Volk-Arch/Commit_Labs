@@ -268,4 +268,5 @@ $N$ событий в кубе $N^k$ клеток → занятость $N^{1-k
 ---
 
 *Реализация: `exchange.py` (`can_swap`), `homotopy.py` (обмотка), `density_swap.py` (порог по плотности). Замеры по близнецам —
-`breakit.py`. Всё остальное — `order6.py`.*
+`breakit.py`. Всё остальное — `order6.py`. Оба в репозиторий не попали; функции `can_swap`,
+`with_twins`, `swap_with_obstacles`, `winding` есть в `code/order8.py`.*

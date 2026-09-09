@@ -1,6 +1,6 @@
-import sys; sys.path.insert(0, '/mnt/user-data/outputs')
+import sys, os; _HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, _HERE)
 import numpy as np
-exec(open('/home/claude/waves.py').read())
+exec(open(os.path.join(_HERE, 'waves.py'), encoding='utf-8').read())
 
 def wave_input(pos, directions, freqs, phases0=None):
     """ВОЛНОВОЙ ВХОД. У каждой волны: направление, частота, начальная фаза.

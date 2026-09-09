@@ -1,6 +1,6 @@
-import sys; sys.path.insert(0, '/mnt/user-data/outputs')
+import sys, os; _HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, _HERE)
 import numpy as np
-exec(open('/home/claude/order8.py').read().split("if __name__")[0])
+exec(open(os.path.join(_HERE, 'order8.py'), encoding='utf-8').read().split("if __name__")[0])
 rng14 = np.random.default_rng(191)
 
 def rel_majority(U, need):

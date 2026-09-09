@@ -1,5 +1,5 @@
 import numpy as np
-import sys; sys.path.insert(0, '/home/claude')
+import sys, os; _HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, _HERE)
 from cliff import clifford, transposition_op
 
 def rel_of(X):

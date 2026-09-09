@@ -1,6 +1,6 @@
-import sys; sys.path.insert(0, '/mnt/user-data/outputs')
+import sys, os; _HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, _HERE)
 import numpy as np
-exec(open('/home/claude/spinlabel.py').read())
+exec(open(os.path.join(_HERE, 'spinlabel.py'), encoding='utf-8').read())
 
 def defect_radius(N, pp, seed=317, samples=300000):
     """Как далеко от киральных ПАР распространяется нарушение транзитивности.

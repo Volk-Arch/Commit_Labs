@@ -1,6 +1,6 @@
-import sys; sys.path.insert(0, '/mnt/user-data/outputs')
+import sys, os; _HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, _HERE)
 import numpy as np
-exec(open('/home/claude/infocount.py').read())
+exec(open(os.path.join(_HERE, 'infocount.py'), encoding='utf-8').read())
 
 def from_two(N, k, rs):
     """Кладём ДВА числа — сумму и разброс — и восстанавливаем k шкал.

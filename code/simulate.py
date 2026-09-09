@@ -38,6 +38,14 @@ try:
 except ImportError:
     HAVE_SCIPY = False
 
+import sys
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")      # Windows: консоль cp1251
+    sys.stderr.reconfigure(encoding="utf-8")
+if not HAVE_SCIPY:
+    print("⚠ scipy не найден: размерность будет оценена как 1 − log2(доля пар), "
+          "а не по Майрхейму–Мейеру; режим --compare без scipy не работает", file=sys.stderr)
+
 
 # ============================================================ алгебра Клиффорда
 
@@ -393,8 +401,9 @@ def report(S):
 
     print("\n1. ГЕОМЕТРИЯ")
     print(f"   доля связанных пар : {S.density():.5f}   (теория 2^-(k-1) = {2.0**-(S.k-1):.5f})")
+    how = "Майрхейм–Мейер" if HAVE_SCIPY else "без scipy: 1 − log2 f"
     print(f"   РАЗМЕРНОСТЬ        : {S.dimension():.2f}   "
-          f"→ пространственных измерений {S.k-1}")
+          f"→ пространственных измерений {S.k-1}   ({how})")
     print(f"   причинных связей   : {int(S.R.sum()):,}")
     print(f"   прямых (лучей)     : {int(S.L.sum()):,}   "
           f"({S.L.sum()/max(S.R.sum(),1):.1%} от всех)")

@@ -1,6 +1,6 @@
-import sys; sys.path.insert(0, '/mnt/user-data/outputs')
+import sys, os; _HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, _HERE)
 import numpy as np
-exec(open('/home/claude/triangle.py').read())
+exec(open(os.path.join(_HERE, 'triangle.py'), encoding='utf-8').read())
 
 def mix_step_m(Rs, k, rs=None):
     """Кольцо из m миров: вход мира i — сумма от соседа слева, разброс от соседа справа."""

@@ -16,6 +16,10 @@
            python3 double_slit.py --gpu          # если установлен cupy
 """
 import argparse
+import sys
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")      # Windows: консоль cp1251
+    sys.stderr.reconfigure(encoding="utf-8")
 import numpy as np
 
 # ---------------------------------------------------------------- конструкция

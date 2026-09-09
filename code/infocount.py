@@ -1,6 +1,6 @@
-import sys; sys.path.insert(0, '/mnt/user-data/outputs')
+import sys, os; _HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, _HERE)
 import numpy as np
-exec(open('/home/claude/minbits.py').read())
+exec(open(os.path.join(_HERE, 'minbits.py'), encoding='utf-8').read())
 
 def order_entropy_bits(R):
     """Сколько бит реально несёт порядок: энтропия распределения по различным прошлым."""

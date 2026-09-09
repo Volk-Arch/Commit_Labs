@@ -1,6 +1,6 @@
-import sys; sys.path.insert(0, '/mnt/user-data/outputs')
+import sys, os; _HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, _HERE)
 import numpy as np
-exec(open('/home/claude/charge_weight.py').read())
+exec(open(os.path.join(_HERE, 'charge_weight.py'), encoding='utf-8').read())
 
 def charge_census(X):
     """Перепись зарядов: сколько событий каждого типа и суммарный «заряд»."""

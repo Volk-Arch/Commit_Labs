@@ -1,6 +1,6 @@
-import sys; sys.path.insert(0, '/mnt/user-data/outputs')
+import sys, os; _HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, _HERE)
 import numpy as np
-exec(open('/home/claude/symfun.py').read())
+exec(open(os.path.join(_HERE, 'symfun.py'), encoding='utf-8').read())
 
 def phase_quantities(U):
     """Величины, доступные ПРЯМО ИЗ ФАЗ — без требования выжить в порядке.

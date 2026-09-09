@@ -1,6 +1,6 @@
-import sys; sys.path.insert(0, '/mnt/user-data/outputs')
+import sys, os; _HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, _HERE)
 import numpy as np
-exec(open('/home/claude/stochastic.py').read())
+exec(open(os.path.join(_HERE, 'stochastic.py'), encoding='utf-8').read())
 
 def diverging_step(W, Rb, rate=0.1, rs=None):
     """Расхождение вместо схождения: вес УДАЛЯЕТСЯ от среднего по соседям.

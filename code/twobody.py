@@ -21,6 +21,10 @@
     python3 twobody.py --seeds 8          # больше статистики
 """
 import argparse
+import sys
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")      # Windows: консоль cp1251
+    sys.stderr.reconfigure(encoding="utf-8")
 import numpy as np
 
 

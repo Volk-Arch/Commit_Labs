@@ -1,6 +1,6 @@
-import sys; sys.path.insert(0, '/mnt/user-data/outputs')
+import sys, os; _HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, _HERE)
 import numpy as np
-exec(open('/home/claude/macro_entropy.py').read())
+exec(open(os.path.join(_HERE, 'macro_entropy.py'), encoding='utf-8').read())
 
 def labels_of(X):
     """Метка события: какая шкала выбивается. Вычисляется из фаз."""

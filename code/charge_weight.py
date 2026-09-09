@@ -1,6 +1,6 @@
-import sys; sys.path.insert(0, '/mnt/user-data/outputs')
+import sys, os; _HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, _HERE)
 import numpy as np
-exec(open('/home/claude/charge.py').read())
+exec(open(os.path.join(_HERE, 'charge.py'), encoding='utf-8').read())
 
 def charge_weights(X, R, g=1.0, base=1.0):
     """Поле действует на ВЕС связи, а не на фазы. Порядок не трогаем вовсе.
