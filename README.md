@@ -119,9 +119,10 @@ numpy на cupy в верхних функциях.
 
 ### Зависимости и окружение
 
-- numpy и scipy. Без scipy `simulate.py` предупредит и оценит размерность как 1 − log₂ f
-  вместо формулы Майрхейма–Мейера; `order8.py` без scipy не запустится.
-- `double_slit.py` дополнительно требует scikit-learn.
+- `python -m pip install -r requirements.txt` ставит numpy, scipy, scikit-learn и matplotlib.
+- numpy и scipy обязательны. Без scipy `simulate.py` предупредит и оценит размерность как
+  1 − log₂ f вместо формулы Майрхейма–Мейера; `order8.py` без scipy не запустится.
+- `double_slit.py` дополнительно требует scikit-learn, а с `--plot` ещё matplotlib.
 - Windows: консоль в cp1251 не печатает юникод. Задайте `PYTHONUTF8=1` (или один раз
   `setx PYTHONUTF8 1`). Точки входа из этого списка переключают вывод в UTF-8 сами.
 - Скрипты, собранные в песочнице через `exec(open(...))`, ищут соседей в своей папке,

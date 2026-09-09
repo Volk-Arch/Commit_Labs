@@ -1,0 +1,5 @@
+# python -m pip install -r requirements.txt
+numpy
+scipy            # формула Майрхейма–Мейера, brentq, solve_triangular; без него order*.py не запускаются
+scikit-learn     # double_slit.py
+matplotlib       # только для double_slit.py --plot
