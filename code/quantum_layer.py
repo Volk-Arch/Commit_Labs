@@ -1,5 +1,5 @@
 import numpy as np
-import sys, os; _HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, _HERE)
+import sys; sys.path.insert(0, '/home/claude')
 from double_slit import build_causet, direct_links, depth, topo_order
 
 def entangle_pairs(N, pairs, d=2, rs=None):

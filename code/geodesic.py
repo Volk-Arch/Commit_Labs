@@ -1,35 +1,32 @@
-import numpy as np
-
-def longest_chain(Lb, a, b, maxlen=25):
-    """Геодезическая: самая ДЛИННАЯ цепь от a до b по прямым связям.
-    В каузальных множествах максимальная цепь = геодезическая."""
-    n = len(Lb)
-    best = {a: [a]}
-    frontier = [a]
-    for _ in range(maxlen):
-        nxt = []
-        for v in frontier:
-            for w in np.flatnonzero(Lb[:, v]):
-                w = int(w)
-                cand = best[v] + [w]
-                if w not in best or len(cand) > len(best[w]):
-                    best[w] = cand
-                    nxt.append(w)
-        if not nxt: break
-        frontier = list(set(nxt))
-        if b in best and len(frontier) > 4000: break
-    return best.get(b)
-
-def geodesics(Lb, R, X, centre, rs, want=200, minlen=5):
-    """Набираем геодезические и смотрим, как меняется радиус вдоль них."""
-    N = len(Lb)
-    out = []
-    for _ in range(4000):
-        i, j = (int(v) for v in rs.integers(0, N, 2))
-        if not R[i, j]: continue
-        ch = longest_chain(Lb, j, i)
-        if ch is None or len(ch) < minlen: continue
-        r = np.linalg.norm(X[ch] - centre, axis=1)
-        out.append((len(ch), float(r[0]), float(r[-1]), float(r.min())))
-        if len(out) >= want: break
-    return np.array(out) if out else None
+"""Точная геодезическая Шварцшильда (экватор) из (0, R, φ=0) в (T, R, φ=π/2): стрельба."""
+import numpy as np, math
+from scipy.integrate import solve_ivp
+def shoot(R, w, L, M=1.0, phi_end=math.pi / 2):
+    A0 = 1 - 2 * M / R; E = math.sqrt(w * w + A0 * (1 + L * L / R ** 2))
+    def rhs(s, y):
+        t, r, ph, v = y; A = 1 - 2 * M / r
+        return [E / A, v, L / r ** 2, -M / r ** 2 + L ** 2 / r ** 3 - 3 * M * L ** 2 / r ** 4]
+    ev = lambda s, y: y[2] - phi_end; ev.terminal = True; ev.direction = 1
+    sol = solve_ivp(rhs, (0, 1e5), [0, R, 0, w], events=ev, rtol=1e-10, atol=1e-10, dense_output=True, max_step=0.5)
+    return sol
+def bvp(R, T, M=1.0):
+    Lc = math.sqrt(M * R) / math.sqrt(1 - 3 * M / R); x = np.array([0.0, Lc])
+    def F(x):
+        sol = shoot(R, x[0], x[1])
+        if not sol.t_events[0].size: return np.array([1e3, 1e3])
+        y = sol.y_events[0][0]; return np.array([y[1] - R, y[0] - T])
+    for _ in range(40):
+        f = F(x); J = np.zeros((2, 2)); h = 1e-6
+        for k in range(2):
+            dx = np.zeros(2); dx[k] = h; J[:, k] = (F(x + dx) - f) / h
+        step = np.linalg.solve(J, -f); x = x + np.clip(step, -0.2, 0.2)
+        if np.abs(f).max() < 1e-8: break
+    sol = shoot(R, x[0], x[1]); s_end = sol.t_events[0][0]
+    ss = np.linspace(0, s_end, 2000); Y = sol.sol(ss)
+    t, r = Y[0], Y[1]
+    rmean_t = np.trapezoid(r, t) / t[-1]        # среднее по координатному времени
+    return dict(w=x[0], L=x[1], rmean=float(rmean_t), xy=np.column_stack([r * np.cos(Y[2]), r * np.sin(Y[2])]), tau=float(s_end))
+if __name__ == '__main__':
+    for R in (8, 12, 16):
+        TK = (math.pi / 2) * math.sqrt(R ** 3)
+        print(R, [round(bvp(R, f * TK)['rmean'], 2) for f in (0.8, 0.9, 1.0, 1.1, 1.2)])

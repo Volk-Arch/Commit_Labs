@@ -1,5 +1,5 @@
 import numpy as np
-import sys, os; _HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, _HERE)
+import sys; sys.path.insert(0, '/home/claude')
 from compute import rel_of, links, topo_order
 
 def build(N, k, rs):

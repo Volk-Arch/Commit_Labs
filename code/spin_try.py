@@ -1,6 +1,6 @@
-import sys, os; _HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, _HERE)
+import sys; sys.path.insert(0, '/mnt/user-data/outputs')
 import numpy as np
-exec(open(os.path.join(_HERE, 'phaselevel.py'), encoding='utf-8').read())
+exec(open('/home/claude/phaselevel.py').read())
 
 def orientation(U):
     """Антисимметричная величина события: чётность ранжировки его шкал.

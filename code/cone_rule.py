@@ -1,7 +1,7 @@
-import sys, os; _HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, _HERE)
+import sys; sys.path.insert(0, '/mnt/user-data/outputs')
 import numpy as np
 from math import gamma
-exec(open(os.path.join(_HERE, 'compare_f.py'), encoding='utf-8').read())
+exec(open('/home/claude/compare_f.py').read())
 
 def rel_pyramid(X):
     """Наше правило: раньше по всем шкалам. Даёт ПИРАМИДАЛЬНЫЙ конус."""

@@ -1,6 +1,6 @@
 """Полная петля: структура влияет и на гибель, И на рождение."""
 import numpy as np
-import sys, os; _HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, _HERE)
+import sys; sys.path.insert(0, '/home/claude')
 from closed import rel_weighted, local_density, metric_from_density
 
 

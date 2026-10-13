@@ -1,6 +1,6 @@
-import sys, os; _HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, _HERE)
+import sys; sys.path.insert(0, '/mnt/user-data/outputs')
 import numpy as np
-exec(open(os.path.join(_HERE, 'macro_entropy.py'), encoding='utf-8').read())
+exec(open('/home/claude/macro_entropy.py').read())
 
 def mixing_step(X, eps=0.004):
     """Детерминированное перемешивание — то, что даёт стрелу времени."""

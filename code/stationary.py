@@ -1,6 +1,6 @@
-import sys, os; _HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, _HERE)
+import sys; sys.path.insert(0, '/mnt/user-data/outputs')
 import numpy as np
-exec(open(os.path.join(_HERE, 'phasedyn.py'), encoding='utf-8').read())
+exec(open('/home/claude/phasedyn.py').read())
 
 def evolve(X, steps, rate=0.08, mix=0.5, noise=0.002, rs=None, track=None):
     """Баланс притяжения и отталкивания + шум. Порядок перестраивается,

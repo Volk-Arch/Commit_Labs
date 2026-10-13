@@ -1,6 +1,6 @@
-import sys, os; _HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, _HERE)
+import sys; sys.path.insert(0, '/mnt/user-data/outputs')
 import numpy as np
-exec(open(os.path.join(_HERE, 'wavefield.py'), encoding='utf-8').read())
+exec(open('/home/claude/wavefield.py').read())
 
 def moving_phases(pos, t, dirs, freqs, speeds=None, p0=None):
     """ДВИЖУЩИЕСЯ волны: фаза = k·x − ω t. Порядок меняется сам со временем,

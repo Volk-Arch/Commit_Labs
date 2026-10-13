@@ -5,7 +5,7 @@
 """
 import numpy as np
 import sys
-import sys, os; _HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, _HERE)
+sys.path.insert(0, '/home/claude')
 from deathrules import local_density
 from gradrule import density_gradient
 

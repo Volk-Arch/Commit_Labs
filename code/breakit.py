@@ -1,6 +1,6 @@
-import sys, os; _HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, _HERE)
+import sys; sys.path.insert(0, '/mnt/user-data/outputs')
 import numpy as np
-exec(open(os.path.join(_HERE, 'order6.py'), encoding='utf-8').read().split("if __name__")[0])
+exec(open('/home/claude/order6.py').read().split("if __name__")[0])
 from collections import Counter
 rng8 = np.random.default_rng(101)
 

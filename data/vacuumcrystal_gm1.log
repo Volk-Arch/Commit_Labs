@@ -1,0 +1,5 @@
+/home/claude/code/vacuumcrystal.py:41: RuntimeWarning: invalid value encountered in power
+  X = X[s <= rmax * (sq / sqmax) ** 0.25]
+crystal γ=-1 вдоль r : δ = +0.00059 ± 0.00017 (разброс на ромб 0.0052)   [794 с]
+crystal γ=-1 поперёк : δ = -0.00066 ± 0.00017 (разброс на ромб 0.0052)   [1585 с]
+   γ=-1: анизотропия +0.00125 ± 0.00024  (теория +0.00128)

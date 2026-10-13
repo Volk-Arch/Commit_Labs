@@ -1,51 +1,38 @@
+"""Какое перекрытие вообще достижимо в пуле кандидатов."""
 import numpy as np
-from itertools import permutations, combinations
+from core import frac_pairs
+import growth2
+from growth2 import grow
 
-def random_poset(N, p, rs):
-    """Случайный порядок: случайный DAG + транзитивное замыкание."""
-    R = np.zeros((N, N), dtype=bool)
-    for j in range(1, N):
-        R[j, :j] = rs.random(j) < p
-    for _ in range(N):
-        nxt = R | (R.astype(np.float32) @ R.astype(np.float32) > 0)
-        if nxt.sum() == R.sum(): break
-        R = nxt
-    np.fill_diagonal(R, False)
-    return R
-
-def linear_extensions(R):
-    """Все линейные продолжения порядка (для малых N)."""
-    N = len(R)
+def probe(N, p, alpha, K=64):
+    growth2._ALPHA = alpha
+    rs = np.random.default_rng(81000)
+    R,_ = grow(N, 'alpha', p, 0.0, 0.2, 8, rs)   # вырастить мир
+    k = N
+    A = R.astype(np.float32)
+    # пул кандидатов на следующем шаге
+    w = np.ones(k)/k
     out = []
-    def rec(done, rest):
-        if not rest:
-            out.append(tuple(done)); return
-        for x in list(rest):
-            if not any(R[x, y] for y in rest if y != x):   # нет предков среди оставшихся
-                rec(done+[x], rest-{x})
-    rec([], set(range(N)))
-    return out
+    for m_frac in (0.01, 0.03, 0.05, 0.10, 0.20):
+        m = max(1, int(m_frac*k))
+        S = np.zeros((k,K), bool)
+        for j in range(K):
+            S[rs.choice(k, m, replace=False), j] = True
+        D = S | ((A.T @ S.astype(np.float32)) > 0)
+        Df = D.astype(np.float32)
+        inter = A @ Df; szP = A.sum(1); szD = Df.sum(0)
+        union = szP[:,None]+szD[None,:]-inter
+        J = np.where(union>0, inter/np.maximum(union,1e-9), 0.0).mean(0)
+        out.append((m_frac, szD.mean()/k, J.min(), J.mean(), J.max()))
+    return frac_pairs(R), out
 
-def exact_dimension(R, cap=6):
-    """Точная порядковая размерность: min число линейных продолжений,
-    пересечение которых даёт R."""
-    N = len(R)
-    exts = linear_extensions(R)
-    if not exts: return None
-    # несравнимые пары
-    inc = [(i, j) for i in range(N) for j in range(i+1, N)
-           if not R[i, j] and not R[j, i]]
-    if not inc: return 1
-    need = set()
-    for i, j in inc:
-        need.add((i, j)); need.add((j, i))
-    cov = []
-    for e in exts:
-        pos = {v: t for t, v in enumerate(e)}
-        cov.append(frozenset((a, b) for (a, b) in need if pos[a] < pos[b]))
-    for k in range(2, cap+1):
-        for combo in combinations(range(len(cov)), k):
-            u = set()
-            for c in combo: u |= cov[c]
-            if u == need: return k
-    return None
+print('достижимое перекрытие кандидата со существующими прошлыми')
+print('ЦЕЛЬ конуса: J ~ 0.17 при |D|/N ~ 0.05-0.10')
+print()
+for alpha in (1.0, 0.0):
+    f, rows = probe(600, 0.05, alpha)
+    print(f'мир выращен alpha={alpha} (доля пар {f:.4f}), пул из 64:')
+    print(f"{'затравка':>10}{'|D|/N':>9}{'J мин':>9}{'J сред':>9}{'J макс':>9}")
+    for mf, sz, jmn, jmd, jmx in rows:
+        print(f'{mf:>10.2f}{sz:>9.3f}{jmn:>9.4f}{jmd:>9.4f}{jmx:>9.4f}')
+    print()

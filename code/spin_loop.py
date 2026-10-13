@@ -1,6 +1,6 @@
-import sys, os; _HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, _HERE)
+import sys; sys.path.insert(0, '/mnt/user-data/outputs')
 import numpy as np
-exec(open(os.path.join(_HERE, 'spin_try.py'), encoding='utf-8').read())
+exec(open('/home/claude/spin_try.py').read())
 
 def loop_one(k, steps=400, radius=0.3, center=None, rs=None):
     """Одна точка обходит замкнутый круг в пространстве фаз.

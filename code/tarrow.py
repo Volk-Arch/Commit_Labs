@@ -1,7 +1,7 @@
-import sys, os; _HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, _HERE)
+import sys; sys.path.insert(0, '/mnt/user-data/outputs')
 import numpy as np
 from scipy.linalg import solve_triangular
-exec(open(os.path.join(_HERE, 'tsymm.py'), encoding='utf-8').read())
+exec(open('/home/claude/tsymm.py').read())
 
 def field_from(R, src, alpha):
     """Поле от источника src вперёд по порядку."""

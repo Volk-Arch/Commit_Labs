@@ -1,6 +1,6 @@
-import sys, os; _HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, _HERE)
+import sys; sys.path.insert(0, '/mnt/user-data/outputs')
 import numpy as np
-exec(open(os.path.join(_HERE, 'chiral2.py'), encoding='utf-8').read())
+exec(open('/home/claude/chiral2.py').read())
 rng15 = np.random.default_rng(263)
 
 def rel_spin(U, s, mode, mask=None):

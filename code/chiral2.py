@@ -1,7 +1,7 @@
-import sys, os; _HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, _HERE)
+import sys; sys.path.insert(0, '/mnt/user-data/outputs')
 import numpy as np
-exec(open(os.path.join(_HERE, 'order8.py'), encoding='utf-8').read().split("if __name__")[0])
-exec(open(os.path.join(_HERE, 'weaken.py'), encoding='utf-8').read().split("def rel_majority")[0])
+exec(open('/home/claude/order8.py').read().split("if __name__")[0])
+exec(open('/home/claude/weaken.py').read().split("def rel_majority")[0])
 
 def base_rel(U):
     N = U.shape[1]; R = np.ones((N, N), dtype=bool)

@@ -1,6 +1,6 @@
-import sys, os; _HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, _HERE)
+import sys; sys.path.insert(0, '/mnt/user-data/outputs')
 import numpy as np
-exec(open(os.path.join(_HERE, 'spinlabel.py'), encoding='utf-8').read())
+exec(open('/home/claude/spinlabel.py').read())
 
 def chiral_weighted(U, s, amp=0.0):
     """Связь НЕ УДАЛЯЕТСЯ, а получает ВЕС. Правые киральные пары имеют вес amp,

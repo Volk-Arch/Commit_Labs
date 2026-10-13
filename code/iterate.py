@@ -1,6 +1,6 @@
-import sys, os; _HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, _HERE)
+import sys; sys.path.insert(0, '/mnt/user-data/outputs')
 import numpy as np
-exec(open(os.path.join(_HERE, 'global_topo.py'), encoding='utf-8').read())
+exec(open('/home/claude/global_topo.py').read())
 
 def iterate_weights(R, W0=None, steps=30, mode='avg', rate=0.5):
     """Вес связи пересчитывается по весам СОСЕДНИХ связей и кладётся обратно.

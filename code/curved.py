@@ -1,28 +1,267 @@
+#!/usr/bin/env python3
+"""ПОЛОЖИТЕЛЬНЫЙ КОНТРОЛЬ ЛИНЕЙКИ: видит ли она кривизну ВООБЩЕ.
+
+ЗАЧЕМ. `game-doc.md` кончился нулём: в замкнутом ящике линейка-отношение
+`s = k/n^(1/4)` не отзывается на разрежение (−0.0001 при шуме 0.005,
+контроль силы при шестикратной массе — тот же нуль). Объяснение
+выводится: сприклинг идёт в ПЛОСКОЕ пространство, вырезание шара не
+заставляет окружающее искривиться, уравнения поля в модели нет — значит
+локальная величина обязана дать нуль по построению.
+
+Но из этого НЕ следует, что линейка вообще способна видеть кривизну. Без
+положительного контроля нуль ничего не говорит о приборе (правило №3
+проекта: нуль без силы — не вывод). Здесь он и ставится.
+
+ПОСТРОЙКА, точная и дешёвая. Конформно-плоская метрика
+
+    ds² = a(t)² (−dt² + dx²)
+
+имеет ТУ ЖЕ причинную структуру, что Минковский: конформные
+преобразования сохраняют световые конусы. Значит порядок берётся плоской
+формулой, а вся кривизна сидит в ПРОФИЛЕ ПЛОТНОСТИ, потому что элемент
+объёма есть `√(−g) d⁴x = a⁴ dt d³x`:
+
+    rho(t) = rho0 * a(t)^4
+
+Это ровно то, на чём стоит причинная теория: порядок даёт конформную
+метрику (Хокинг–Кинг–Маккарти, Маламент), счёт даёт объём, вместе —
+полную метрику. Так что кривизна тут не подделка, а честная кривизна,
+записанная единственным способом, каким причинное множество её и несёт.
+
+Скалярная кривизна конформно-плоской метрики в 4D:
+
+    R = 6 a'' / a³,      ' = d/dt
+
+Берём `a(t) = 1 + c (t − t₀)² / 2`, тогда `a'' = c` постоянна и
+
+    R = 6c / a³ ≈ 6c,    rho(t) ≈ rho0 (1 + 2c (t − t₀)²)
+
+Проверка излучением: при `a ∝ t` (то есть `a'' = 0`) выходит `R = 0` —
+и верно, у FRW с излучением скалярная кривизна нуль. Формула не угадана.
+
+ЧТО ПРЕДСКАЗЫВАЕТСЯ. Отклик линейки на кривизну в первом порядке обязан
+идти как `ℓ²R`, то есть
+
+    Δs / s  =  alpha * ℓ²R  =  alpha * 6c       (в единицах ℓ = 1)
+
+Проверка КОЛИЧЕСТВЕННАЯ, и это главное: не «есть отклик», а «отклик
+линеен по c и обращается в нуль при c = 0». Артефакт плотности так себя
+вести не обязан, а подогнать тут нечего — `c` задаётся, а не выводится.
+
+КОНТРОЛИ, поставленные до замера:
+  1. c = 0 обязано дать ровно плоское значение (тот же засев, та же
+     раскладка) — это нулевая точка;
+  2. ЛИНЕЙНОСТЬ по c: наклон должен быть постоянным, иначе мерится не
+     первый порядок;
+  3. ЗНАК обязан переворачиваться вместе с знаком c;
+  4. проверка, что это не простой градиент плотности: линейка
+     плотностно-независима, значит ПОСТОЯННАЯ плотность отклика не даёт
+     (установлено в ромбе, 0.42 %), а ОДНОРОДНЫЙ наклон плотности
+     (a'' = 0, то есть a ∝ t) обязан дать нуль при ненулевом градиенте —
+     вот это и есть решающее различение «кривизна против плотности»;
+  5. замер только в середине по времени, вдали от краёв слоя.
+
+  python3 curved.py --quick
+  python3 curved.py --seeds 6
+"""
+import argparse
+import math
+import time
+
 import numpy as np
-import sys, os; _HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, _HERE)
-from cliff import clifford, transposition_op
-from spindyn import rel_of, proper_time
 
-def rotor(g, i, j, theta):
-    B = g[i] @ g[j]
-    return np.cos(theta/2)*np.eye(len(B), dtype=complex) + np.sin(theta/2)*B
+from box import heights_window, dx2_periodic
 
-def transport_weighted(X, chain, g, k, alpha=0.0):
-    """Перенос с ДОБАВКОЙ, зависящей от того, насколько близко подошли фазы.
-    alpha=0 — как раньше (плоско). alpha>0 — добавляем поворот по величине сближения."""
-    d = g[0].shape[0]
-    M = np.eye(d, dtype=complex)
-    perms = [tuple(np.argsort(X[c])) for c in chain]
-    for t in range(1, len(perms)):
-        a, b = perms[t-1], perms[t]
-        pa = list(a)
-        for i in range(k):
-            if pa[i] != b[i]:
-                j = pa.index(b[i])
-                M = M @ transposition_op(g, i, j)
-                if alpha:
-                    # добавка: поворот по величине разности фаз в момент смены
-                    gap = abs(X[chain[t], pa[i]] - X[chain[t], pa[j]])
-                    M = M @ rotor(g, pa[i], pa[j], alpha*gap)
-                pa[i], pa[j] = pa[j], pa[i]
-    return M
+
+def sprinkle_conformal(L, T, c, rs, mode='quad'):
+    """Сприклинг с плотностью rho(t) = (1 + 2c (t−T/2)²) или наклоном.
+
+    mode='quad' — a'' = c, кривизна R = 6c (то, что мерим);
+    mode='lin'  — плотность с ОДНОРОДНЫМ наклоном при a'' = 0, то есть
+                  R = 0 при ненулевом градиенте. Это контроль №4:
+                  различение кривизны от простого градиента плотности.
+    """
+    t0 = T / 2.0
+    # ПОЙМАННАЯ ОШИБКА: плотность была ЛИНЕАРИЗОВАНА как 1 + 2c(t−t0)²,
+    # и при сильно отрицательном c уходила в минус — прогон падал на
+    # пустом наборе. Правильно брать ТОЧНОЕ rho = a^4, оно положительно
+    # всегда, пока a > 0. И кривизна тогда тоже точная: R = 6c/a³, где
+    # a³ в знаменателе существен: он кладёт потолок на достижимое ell²R.
+    if mode == 'quad':
+        f = lambda t: (1.0 + 0.5 * c * (t - t0) ** 2) ** 4
+    else:
+        # a ∝ t даёт a''=0 => R=0 при ненулевом градиенте плотности.
+        # Приводим к той же амплитуде, что у 'quad'.
+        amp = (1.0 + 0.5 * c * (T / 2.0) ** 2) ** 4 - 1.0
+        f = lambda t: 1.0 + amp * (t / T)
+    fmax = max(f(0.0), f(T), f(t0))
+    out, need = [], int(round(L ** 3 * T * (f(0.0) + f(T) + f(t0)) / 3.0))
+    got = 0
+    while got < need:
+        m = (need - got) * 3 + 256
+        tt = rs.uniform(0, T, m)
+        keep = rs.uniform(0, fmax, m) < f(tt)
+        tt = tt[keep]
+        if len(tt):
+            out.append(tt)
+            got += len(tt)
+    t = np.concatenate(out)[:need]
+    X = np.empty((len(t), 4))
+    X[:, 0] = t
+    X[:, 1:] = rs.uniform(0, L, (len(t), 3))
+    return X[np.argsort(X[:, 0])]
+
+
+def ell2R(c, T, tlo, thi):
+    """Среднее ell²R по области замера. R = 6c/a³, a = 1 + c(t−T/2)²/2."""
+    t = np.linspace(tlo, thi, 400)
+    a = 1.0 + 0.5 * c * (t - T / 2.0) ** 2
+    return float(np.mean(6.0 * c / a ** 3))
+
+
+def ruler_flat(X, L, k, w, tlo, thi):
+    """Линейка s = k/n^(1/4). Та же, что в `box.py`, без вещества."""
+    h, pr = heights_window(X, L, w)
+    t = X[:, 0]
+    S = X[:, 1:]
+    n = len(X)
+    s = np.full(n, np.nan)
+    cand = np.flatnonzero((t >= tlo) & (t <= thi) & (h >= k + 1))
+    for x in cand:
+        a = x
+        for _ in range(k):
+            a = pr[a]
+            if a < 0:
+                break
+        if a < 0:
+            continue
+        i0 = np.searchsorted(t, t[a], 'right')
+        i1 = np.searchsorted(t, t[x], 'left')
+        if i1 <= i0:
+            s[x] = float(k)
+            continue
+        P = S[i0:i1]
+        tp = t[i0:i1]
+        d1 = dx2_periodic(P, S[a:a + 1], L)[:, 0]
+        d2 = dx2_periodic(S[x:x + 1], P, L)[0]
+        ins = ((tp - t[a]) ** 2 > d1) & ((t[x] - tp) ** 2 > d2)
+        s[x] = k / max(int(ins.sum()), 1) ** 0.25
+    return s, np.isfinite(s)
+
+
+def main():
+    ap = argparse.ArgumentParser(description='Видит ли линейка кривизну')
+    ap.add_argument('--lell', type=float, default=11.0)
+    ap.add_argument('--tell', type=float, default=11.0)
+    ap.add_argument('--k', type=int, default=5)
+    ap.add_argument('--well', type=float, default=6.0)
+    ap.add_argument('--seeds', type=int, default=6)
+    ap.add_argument('--amax', type=float, default=1.25,
+                    help='предел на a; ОБЪЯВЛЕННЫЙ выбор, сканируется')
+    ap.add_argument('--quick', action='store_true')
+    a = ap.parse_args()
+
+    t0 = time.time()
+    L, T, w = a.lell, a.tell, a.well
+    tlo, thi = w + 1.0, T - 1.0
+    # допустимое c ограничено положительностью a: |c| < 2/(T/2)²
+    # ВЫБОР, ОБЪЯВЛЕННЫЙ ЯВНО. Предел на амплитуду `a` я поставил после
+    # того, как увидел, что прогон не укладывается по времени, — то есть
+    # выбрал рукой по исходу, и Игорь на это указал справедливо. Сам
+    # предел физикой не предписан (точное rho = a^4 положительно всегда),
+    # он нужен только чтобы N не рос десятикратно и первый порядок по
+    # кривизне не уходил.
+    #
+    # Починка: предел стал ПАРАМЕТРОМ, который сканируется. Если вердикт
+    # от него зависит — он несёт ответ, и это надо знать.
+    cmax = 2.0 * (a.amax - 1.0) / (T / 2.0) ** 2
+    cs = ([0.0, 0.4 * cmax, cmax] if a.quick else
+          [0.0, -cmax, -0.4 * cmax, 0.4 * cmax, cmax])
+    seeds = 3 if a.quick else a.seeds
+    print('КОНФОРМНО-ПЛОСКАЯ метрика: причинность та же, что у Минковского,')
+    print('кривизна сидит в профиле плотности rho = rho0 * a^4.')
+    print('a(t) = 1 + c(t−T/2)²/2  =>  a\'\' = c  =>  R = 6c/a³ ≈ 6c')
+    print('Проверка формулы: a ∝ t даёт a\'\'=0 и R=0 — верно для FRW')
+    print('с излучением, то есть формула не угадана.')
+    print()
+    print(f'ящик {L} x {T} ell, окно {w}, k = {a.k}, засевов {seeds}')
+    print(f'замер по t в [{tlo}, {thi}] ell')
+    print()
+    print('ПРЕДСКАЗАНИЕ: Δs/s = alpha * ell²R = alpha * 6c, линейно по c,')
+    print('и РОВНО нуль при c = 0.')
+    print()
+    print(f"{'c':>9}{'ell^2 R':>10}{'s':>11}{'ст.ош':>9}"
+          f"{'Δs против c=0':>15}{'сигм':>7}{'событий':>9}")
+    res = {}
+    base = None
+    for c in cs:
+        vals, nn = [], 0
+        for s_ in range(seeds):
+            X = sprinkle_conformal(L, T, c,
+                                   np.random.default_rng(8800 + 97 * s_))
+            sv, ok = ruler_flat(X, L, a.k, w, tlo, thi)
+            vals.append(float(np.nanmean(sv[ok])))
+            nn = len(X)
+        v = np.array(vals)
+        se = v.std(ddof=1) / math.sqrt(len(v))
+        res[c] = (v.mean(), se, v)
+        if c == 0.0:
+            base = res[c]
+            print(f'{c:>9.4f}{ell2R(c,T,tlo,thi):>10.4f}{v.mean():>11.4f}'
+                  f'{se:>9.4f}{"— нулевая точка":>15}{"":>7}{nn:>9}')
+        else:
+            d = v.mean() - base[0]
+            sed = math.sqrt(se ** 2 + base[1] ** 2)
+            print(f'{c:>9.4f}{ell2R(c,T,tlo,thi):>10.4f}{v.mean():>11.4f}'
+                  f'{se:>9.4f}{d:>+15.5f}{abs(d)/max(sed,1e-12):>7.1f}'
+                  f'{nn:>9}')
+
+    print()
+    nz = [c for c in cs if c != 0.0]
+    if len(nz) >= 3:
+        x = np.array([ell2R(c, T, tlo, thi) for c in nz])
+        y = np.array([res[c][0] - base[0] for c in nz])
+        sl, ic = np.polyfit(x, y, 1)
+        pred = sl * x + ic
+        ss = 1 - ((y - pred) ** 2).sum() / max(((y - y.mean()) ** 2).sum(),
+                                               1e-30)
+        print('ЛИНЕЙНОСТЬ по кривизне (контроль №2 и №3 сразу: знак')
+        print('обязан переворачиваться вместе с c)')
+        print(f'  Δs = {sl:+.4f} * ell²R {ic:+.5f},   R² = {ss:.4f}')
+        print(f'  alpha (в долях s): {sl/base[0]:+.4f}')
+        if ss > 0.9 and abs(ic) < 2 * base[1]:
+            print('  ЛИНЕЙНО и через нуль => ЛИНЕЙКА ВИДИТ КРИВИЗНУ')
+        elif ss > 0.9:
+            print('  линейно, но со сдвигом — проверить нулевую точку')
+        else:
+            print('  НЕ линейно => это не первый порядок по кривизне')
+
+    # КОНТРОЛЬ №4: градиент плотности БЕЗ кривизны
+    print()
+    print('КОНТРОЛЬ №4 (решающий): однородный наклон плотности при a\'\'=0,')
+    print('то есть R = 0 при ненулевом градиенте — отклик обязан быть НУЛЁМ')
+    cc = max(nz, key=abs)
+    vals = []
+    for s_ in range(seeds):
+        X = sprinkle_conformal(L, T, cc,
+                               np.random.default_rng(8800 + 97 * s_),
+                               mode='lin')
+        sv, ok = ruler_flat(X, L, a.k, w, tlo, thi)
+        vals.append(float(np.nanmean(sv[ok])))
+    v = np.array(vals)
+    se = v.std(ddof=1) / math.sqrt(len(v))
+    d = v.mean() - base[0]
+    sed = math.sqrt(se ** 2 + base[1] ** 2)
+    dq = res[cc][0] - base[0]
+    print(f'  та же амплитуда плотности, R = 0:  Δs = {d:+.5f} '
+          f'({abs(d)/max(sed,1e-12):.1f} сигм)')
+    print(f'  с кривизной (c = {cc}):             Δs = {dq:+.5f}')
+    print(f'  отношение кривизна/градиент: '
+          f'{abs(dq)/max(abs(d),1e-12):.1f}')
+    print(f'  {"РАЗЛИЧАЕТ кривизну от градиента" if abs(d) < 2*sed and abs(dq) > 3*sed else "не различает — отклик идёт от градиента, не от кривизны"}')
+    print()
+    print(f'  время {time.time()-t0:.0f} с')
+
+
+if __name__ == '__main__':
+    main()

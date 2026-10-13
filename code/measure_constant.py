@@ -408,12 +408,11 @@ def main():
         n_t = min(args.n, 3000)
         A = np.random.rand(200, n_t).astype(np.float32)
         B = np.random.rand(n_t, 200).astype(np.float32)
-        t0 = time.perf_counter()
+        t0 = time.time()
         for _ in range(10):
             C = A @ B
-        mm_ms = (time.perf_counter()-t0)/10*1000
-        # time.time() на Windows даёт шаг ~15 мс: замер выходил нулём и делил на ноль
-        gflops = 2*200*n_t*200/(mm_ms/1000)/1e9 if mm_ms > 0 else float('inf')
+        mm_ms = (time.time()-t0)/10*1000
+        gflops = 2*200*n_t*200/(mm_ms/1000)/1e9
         del A, B, C
         X_t = np.random.rand(n_t, args.k)
         t0 = time.time()

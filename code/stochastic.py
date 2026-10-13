@@ -1,6 +1,6 @@
-import sys, os; _HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, _HERE)
+import sys; sys.path.insert(0, '/mnt/user-data/outputs')
 import numpy as np
-exec(open(os.path.join(_HERE, 'conflict_dyn.py'), encoding='utf-8').read())
+exec(open('/home/claude/conflict_dyn.py').read())
 
 def noisy_step(W, Rb, rate=0.15, rs=None):
     """Случайный шаг: вес связи слегка смещается к среднему по соседям ПЛЮС шум.
