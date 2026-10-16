@@ -266,3 +266,105 @@ def pair_physical(w, e2=0.2, Z=2.0, m=1.0, rho=4.0, db=0.004, log=print):
             res[l_] = min(Ob.peaks(ow, S, 0.05), key=lambda z: abs(z[0] - guess))[0]
         out[key] = (res[0.0], res[lam], lam); log(f'{key}: {res[0.0]:.4f} → {res[lam]:.4f} (λ {lam:.5f})')
     return dict(w=(wa, wb), E=(E0, E1), ci=(E0c, E1c, EFc, EBc, EF1, EB1), F=out['F'], BB=out['BB'])
+
+# ---------- вершина, одинаковая для всех состояний: векторная (калибровочная) связь (dirac-doc §17) ----------
+def pair_vector(w, e2=0.2, Z=2.0, m=1.0, rho=4.0, log=print):
+    """W(z₁, z₂) = i·(e²/ρ²)·(Ē − U(x₁))(Ē − U(x₂))·[несравнимы] — без измеренных чисел; Ē — энергия частицы в полюсе канала
+    (для пары a, b — средняя) [приближение «полюсное»]. Каналы: фермионы a∧b, бозоны a∨b, бозоны a·a; эталон — КВ двух тел."""
+    from . import fields as Fl
+    be = e2 / 2; Fn = Z * e2 / 2; N_, Lg = 512, 64.0; xg = (np.arange(N_) - N_ / 2) * (Lg / N_); hh = Lg / N_; kf = 2 * np.pi * np.fft.fftfreq(N_, d=hh)
+    Dm = np.real_if_close(np.fft.ifft(1j * kf[:, None] * np.fft.fft(np.eye(N_), axis=0), axis=0)); Vd = np.diag(Fn * np.abs(xg))
+    ev, vec = np.linalg.eigh(np.block([[-1j * Dm + Vd, m * np.eye(N_)], [m * np.eye(N_), 1j * Dm + Vd]]))
+    loc = lambda i: (np.abs(vec[:N_, i]) ** 2 + np.abs(vec[N_:, i]) ** 2) @ xg ** 2
+    pos = [i for i in np.argsort(ev) if ev[i] > 0.5 * m and loc(i) < 150][:24]; E = ev[pos]; u, v = vec[:N_, pos], vec[N_:, pos]; nb = len(pos)
+    T = (np.einsum('xi,xj->ijx', np.conj(u), u) + np.einsum('xi,xj->ijx', np.conj(v), v)).reshape(nb * nb, N_)
+    M2 = (T @ (-be * np.abs(xg[:, None] - xg[None])) @ T.T).reshape(nb, nb, nb, nb).transpose(0, 2, 1, 3).reshape(nb * nb, nb * nb); ci = {}
+    for sgn in (-1, 1):
+        pairs = [(i, j) for i in range(nb) for j in range(i + (1 if sgn < 0 else 0), nb)]; B = np.zeros((len(pairs), nb, nb))
+        for p, (i, j) in enumerate(pairs):
+            B[p, i, j] += 1; B[p, j, i] += sgn; B[p] /= np.linalg.norm(B[p])
+        B = B.reshape(len(pairs), nb * nb); wv, U_ = np.linalg.eigh(np.diag([E[i] + E[j] for i, j in pairs]) + np.real(B @ M2 @ B.T))
+        ci[sgn] = (wv[0], wv[int(np.argmax(np.abs(U_[pairs.index((0, 1))]) ** 2))])
+    t, x, n = w.t, w.x, w.n; L = max(np.abs(t).max(), np.abs(x).max()); ts = -L + 10
+    UfN, _, Uev, _ = Fl.order_field11(w, 1.0, Z * e2, (ts, L - 4)); K, C = dirac_component_K(w, UfN, m); inc = ~(C | C.T); np.fill_diagonal(inc, False); del C
+    gs = lambda s: (1 + s) * np.exp(-s * s / 2); gs1 = lambda s: s * np.exp(-s * s / 8); src = np.abs(t - ts) < 0.45
+    fa, fb = np.where(src, gs(x), 0), np.where(src, gs1(x), 0); pa, pb = K.T @ fa, K.T @ fb
+    om = np.linspace(0.8, 2.0, 2401); sel = (t > ts + 1.5) & (t < L - 8) & (np.abs(x) < 8); pk = []
+    for g_, p_ in ((gs, pa), (gs1, pb)):
+        S = Ob.spectrum(t[sel], g_(x[sel]) * p_[sel], om)
+        for e_, h_ in Ob.peaks(om, S / S.max(), 0.03):
+            if all(abs(e_ - q[0]) > 0.03 for q in pk): pk.append((e_, h_))
+    lev = [e for e, _ in sorted(pk)]; near = lambda Ex: min(lev, key=lambda z: abs(z - Ex)); E0, E1 = near(E[0]), near(E[1])
+    xc, amp = crystal_orbitals(w, pa + pb, lev, ts + 1.5, L - 4)
+    def hfun(a_):
+        tab = dict(zip(np.round(xc, 6), np.conj(a_))); return np.array([tab.get(v_, 0) for v_ in np.round(x, 6)])
+    ha, hb = hfun(amp[lev.index(E0)]), hfun(amp[lev.index(E1)])
+    lv = np.unique(np.round(t, 9)); layers = [np.nonzero(np.abs(t - v_) < 1e-9)[0] for v_ in lv]
+    R = np.nonzero(sel)[0]; tR = np.unique(np.round(t[R], 9)); layR = [R[np.abs(t[R] - v_) < 1e-9] for v_ in tR]; ow = np.linspace(1.8, 3.8, 4001); out = {'E': (E0, E1), 'Ec': (E[0], E[1])}
+    for key, Fm, P1, P2, sgn, Et, Eb, ref, base in (('F', np.outer(fa, fb) - np.outer(fb, fa), ha, hb, -1, E0 + E1, 0.5 * (E0 + E1), ci[-1][0], E[0] + E[1]),
+                                                    ('B', np.outer(fa, fb) + np.outer(fb, fa), ha, hb, 1, E0 + E1, 0.5 * (E0 + E1), ci[1][1], E[0] + E[1]),
+                                                    ('BB', np.outer(fa, fa), ha, ha, 0, 2 * E0, E0, ci[1][0], 2 * E[0])):
+        nz = Eb - Uev; Wm = (e2 / rho ** 2) * np.outer(nz, nz) * inc; res = {}
+        for on in (0, 1):
+            A = np.zeros((n, n), complex); H = np.zeros((n, n), complex)
+            for Zl in layers:
+                A[Zl] = K[:, Zl].T @ H; G = Fm[Zl] + (1j * Wm[Zl] * A[Zl] if on else 0)
+                if np.any(G): H[Zl] = G @ K
+            s = np.array([(np.outer(P1[Z_], P2[Z_]) * A[np.ix_(Z_, Z_)]).sum() + (sgn * (np.outer(P2[Z_], P1[Z_]) * A[np.ix_(Z_, Z_)]).sum() if sgn else 0) for Z_ in layR]); del A, H
+            S = Ob.spectrum(tR, s, ow); S /= S.max(); res[on] = min(Ob.peaks(ow, S, 0.05), key=lambda z: abs(z[0] - (Et + (ref - base) * on)))[0]
+        out[key] = (res[0], res[1], ref, base); log(f'{key}: {res[0]:.4f} → {res[1]:.4f} (непр. {ref:.4f})')
+        del Wm
+    return out
+
+# ---------- «литий» на новой основе (dirac-doc §18): уровни кристалла + сдвиги трёх пар двигателем эволюции ----------
+def lithium_pairs(w, e2=0.2, Z=3.0, m=1.0, rho=4.0, log=print):
+    import itertools
+    from . import fields as Fl
+    be = e2 / 2; Fn = Z * e2 / 2
+    N_, Lg = 512, 64.0; xg = (np.arange(N_) - N_ / 2) * (Lg / N_); kf = 2 * np.pi * np.fft.fftfreq(N_, d=Lg / N_)
+    Dm = np.real_if_close(np.fft.ifft(1j * kf[:, None] * np.fft.fft(np.eye(N_), axis=0), axis=0)); Vd = np.diag(Fn * np.abs(xg))
+    ev, vec = np.linalg.eigh(np.block([[-1j * Dm + Vd, m * np.eye(N_)], [m * np.eye(N_), 1j * Dm + Vd]]))
+    loc = lambda i: (np.abs(vec[:N_, i]) ** 2 + np.abs(vec[N_:, i]) ** 2) @ xg ** 2
+    pos = [i for i in np.argsort(ev) if ev[i] > 0.5 and loc(i) < 150][:12]; E = ev[pos]; u, v = vec[:N_, pos], vec[N_:, pos]; nb = len(pos)
+    T = (np.einsum('xi,xj->ijx', np.conj(u), u) + np.einsum('xi,xj->ijx', np.conj(v), v)).reshape(nb * nb, N_)
+    M = (T @ (-be * np.abs(xg[:, None] - xg[None])) @ T.T).reshape(nb, nb, nb, nb); V2 = M.transpose(0, 2, 1, 3).reshape(nb * nb, nb * nb); I = np.eye(nb)
+    dets = list(itertools.combinations(range(nb), 3)); D = np.zeros((len(dets), nb ** 3))
+    for p, (a, b, c) in enumerate(dets):
+        for perm, sg in (((a, b, c), 1), ((b, c, a), 1), ((c, a, b), 1), ((b, a, c), -1), ((a, c, b), -1), ((c, b, a), -1)):
+            D[p, perm[0] * nb * nb + perm[1] * nb + perm[2]] = sg / np.sqrt(6)
+    V12 = np.kron(V2, I); P23 = np.eye(nb ** 3).reshape((nb,) * 6).transpose(0, 2, 1, 3, 5, 4).reshape(nb ** 3, nb ** 3); P13 = np.eye(nb ** 3).reshape((nb,) * 6).transpose(2, 1, 0, 5, 4, 3).reshape(nb ** 3, nb ** 3)
+    Hd = np.real(D @ (V12 + P23 @ V12 @ P23 + P13 @ V12 @ P13) @ D.T) + np.diag([E[a] + E[b] + E[c] for a, b, c in dets]); E3 = np.linalg.eigvalsh(Hd)[0]; E31 = Hd[0, 0]
+    def pair2(i, j):
+        pairs = [(a, b) for a in range(nb) for b in range(a + 1, nb)]; B = np.zeros((len(pairs), nb, nb))
+        for q, (a, b) in enumerate(pairs):
+            B[q, a, b], B[q, b, a] = 1 / np.sqrt(2), -1 / np.sqrt(2)
+        B = B.reshape(len(pairs), nb * nb); wv, U_ = np.linalg.eigh(np.diag([E[a] + E[b] for a, b in pairs]) + np.real(B @ V2 @ B.T))
+        return wv[int(np.argmax(np.abs(U_[pairs.index((i, j))]) ** 2))] - E[i] - E[j]
+    pc = {ij: pair2(*ij) for ij in ((0, 1), (0, 2), (1, 2))}
+    t, x, n = w.t, w.x, w.n; L = max(np.abs(t).max(), np.abs(x).max()); ts = -L + 10
+    UfN, _, Uev, _ = Fl.order_field11(w, 1.0, Z * e2, (ts, L - 4)); K, C = dirac_component_K(w, UfN, m); inc = ~(C | C.T); np.fill_diagonal(inc, False); del C
+    srcf = [lambda s: (1 + s) * np.exp(-s * s / 2), lambda s: s * np.exp(-s * s / 8), lambda s: (1 - s * s / 3) * np.exp(-s * s / 10)]
+    srcm = np.abs(t - ts) < 0.45; fs = [np.where(srcm, g(x), 0) for g in srcf]; ps = [K.T @ f for f in fs]
+    om = np.linspace(0.8, 2.6, 3601); sel = (t > ts + 1.5) & (t < L - 8) & (np.abs(x) < 8); pk = []
+    for g_, p_ in zip(srcf, ps):
+        S = Ob.spectrum(t[sel], g_(x[sel]) * p_[sel], om)
+        for e_, h_ in Ob.peaks(om, S / S.max(), 0.03):
+            if all(abs(e_ - q[0]) > 0.03 for q in pk): pk.append((e_, h_))
+    lev = [e for e, _ in sorted(pk)]; near = lambda Ex: min(lev, key=lambda z: abs(z - Ex)); Ec = [near(E[k]) for k in range(3)]
+    xc, amp = crystal_orbitals(w, ps[0] + ps[1] + ps[2], lev, ts + 1.5, L - 4)
+    def hfun(a_):
+        tab = dict(zip(np.round(xc, 6), np.conj(a_))); return np.array([tab.get(v_, 0) for v_ in np.round(x, 6)])
+    hs = [hfun(amp[lev.index(Ec[k])]) for k in range(3)]
+    lv = np.unique(np.round(t, 9)); layers = [np.nonzero(np.abs(t - v_) < 1e-9)[0] for v_ in lv]
+    R = np.nonzero(sel)[0]; tR = np.unique(np.round(t[R], 9)); layR = [R[np.abs(t[R] - v_) < 1e-9] for v_ in tR]; ow = np.linspace(1.8, 4.6, 5601); sh = {}
+    for (i, j) in ((0, 1), (0, 2), (1, 2)):
+        Fm = np.outer(fs[i], fs[j]) - np.outer(fs[j], fs[i]); nz = 0.5 * (Ec[i] + Ec[j]) - Uev; Wm = (e2 / rho ** 2) * np.outer(nz, nz) * inc; res = {}
+        for on in (0, 1):
+            A = np.zeros((n, n), complex); H = np.zeros((n, n), complex)
+            for Zl in layers:
+                A[Zl] = K[:, Zl].T @ H; G = Fm[Zl] + (1j * Wm[Zl] * A[Zl] if on else 0)
+                if np.any(G): H[Zl] = G @ K
+            s = np.array([(np.outer(hs[i][Z_], hs[j][Z_]) * A[np.ix_(Z_, Z_)]).sum() - (np.outer(hs[j][Z_], hs[i][Z_]) * A[np.ix_(Z_, Z_)]).sum() for Z_ in layR]); del A, H
+            S = Ob.spectrum(tR, s, ow); S /= S.max(); res[on] = min(Ob.peaks(ow, S, 0.03), key=lambda z: abs(z[0] - (Ec[i] + Ec[j] + pc[(i, j)] * on)))[0]
+        sh[(i, j)] = res[1] - res[0]; del Wm; log(f'пара {i}{j}: сдвиг {sh[(i, j)]:+.4f} (непр. {pc[(i, j)]:+.4f})')
+    return dict(E=E[:3], Ec=Ec, pc=pc, sh=sh, E3=E3, E31=E31, Epair=float(sum(E[:3]) + sum(pc.values())), Etot=float(sum(Ec) + sum(sh.values())))
