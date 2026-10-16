@@ -1,0 +1,3 @@
+самопроверка goldlab, пресет «как в документе»
+  ✗ eos: ошибка TypeError: 'float' object is not callable
+итог: ✓ 0, ≈ 0, ✗ 1; 3 с

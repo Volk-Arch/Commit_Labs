@@ -27,13 +27,14 @@ def numbers(lo, hi, rlo, rhi):
     if not C: return np.empty(0), np.empty(0)
     return np.concatenate(C), np.concatenate(Cp)
 
-def crystal(box, r):
+def crystal(box, r, shift=None):
     """ФОРМУЛА МИРА. box = [(t_lo, t_hi), (x_lo, x_hi), ...] — где смотрим (1+1, 2+1, 3+1 — одно и то же правило).
-    Возвращает события (t, x, …), у которых |тень|² = |τ′|·t′² + x′² + … ≤ r²."""
-    (tl, th), *space = box
-    c, cp = numbers(tl / ST, th / ST, -r / SI, r / SI); axes = [(c * ST, (cp * SI) ** 2)]
-    for lo, hi in space:
-        c, cp = numbers(lo, hi, -r, r); axes.append((c, cp ** 2))
+    Возвращает события (t, x, …), у которых |тень − shift|² = (√|τ′|·t′ − s₀)² + (x′ − s₁)² + … ≤ r².
+    shift — центр шара тени («сдвиг фазона»: тот же закон, другие события; по умолчанию 0)."""
+    (tl, th), *space = box; s = [0.0] * len(box) if shift is None else list(shift)
+    c, cp = numbers(tl / ST, th / ST, (s[0] - r) / SI, (s[0] + r) / SI); axes = [(c * ST, (cp * SI - s[0]) ** 2)]
+    for k, (lo, hi) in enumerate(space, 1):
+        c, cp = numbers(lo, hi, s[k] - r, s[k] + r); axes.append((c, (cp - s[k]) ** 2))
     P = np.zeros((1, len(box))); W = np.zeros(1)
     for k, (c, w2) in enumerate(axes):                       # перебор по осям, сразу выкидывая то, чья тень уже вне шара
         P = np.repeat(P, len(c), 0); W = np.repeat(W, len(c))

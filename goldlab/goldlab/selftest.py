@@ -6,8 +6,8 @@ from . import experiments as E, store
 
 ORDER = ['world', 'clock', 'light_point', 'bell', 'slice_rt', 'nonabelian', 'dispersion', 'charge_force', 'atom11', 'hydrogen11',
          'light31', 'coulomb31', 'geom_charge', 'hydrogen31', 'color', 'pair',
-         'onebody_long', 'dirac_walk', 'field11', 'onerule', 'pauli_atom', 'helium_field', 'lithium_scf', 'whytau', 'nonull', 'lightspin', 'orderatom', 'heliumorder', 'pairexchange', 'pairnorm', 'vectorvertex', 'lithiumnew']
-QUICK_SKIP = {'pair', 'lithium_scf', 'pairexchange', 'pairnorm', 'vectorvertex', 'lithiumnew'}                       # долгий (GMRES); в быстром режиме пропускается
+         'onebody_long', 'dirac_walk', 'field11', 'onerule', 'pauli_atom', 'helium_field', 'lithium_scf', 'whytau', 'nonull', 'lightspin', 'orderatom', 'heliumorder', 'pairexchange', 'pairnorm', 'vectorvertex', 'lithiumnew', 'eos', 'pairensemble', 'spin31', 'ens31', 'pauli31', 'grow31', 'fuzzy31', 'ladder31', 'lightatom31', 'energyatom31', 'hinvatom31', 'ordercone31', 'boxorder31', 'massive31']
+QUICK_SKIP = {'pair', 'lithium_scf', 'pairexchange', 'pairnorm', 'vectorvertex', 'lithiumnew', 'eos', 'pairensemble', 'spin31', 'ens31', 'pauli31', 'grow31', 'fuzzy31', 'ladder31', 'lightatom31', 'energyatom31', 'hinvatom31', 'massive31'}                       # долгий (GMRES); в быстром режиме пропускается
 
 def main():
     full = '--quick' not in sys.argv; only = None

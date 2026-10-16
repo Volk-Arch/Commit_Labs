@@ -102,3 +102,16 @@ class GridField:
         a = np.clip((t - self.t0) / self.dt, 0, self.V.shape[0] - 1.000001); b = np.clip((x - self.x0) / self.dx, 0, self.V.shape[1] - 1.000001)
         i = a.astype(int); j = b.astype(int); fa = a - i; fb = b - j; V = self.V
         return (V[i, j] * (1 - fa) * (1 - fb) + V[i + 1, j] * fa * (1 - fb) + V[i, j + 1] * (1 - fa) * fb + V[i + 1, j + 1] * fa * fb)
+
+def johnston31_respond_spinor(n, I, J, rho, m, f, phase=None, Bx=None):
+    """3+1, двухкомпонентное поле (спинор Вейля): отклик по связям, φ_j = Σ_{i→j} coef·U·(f_i + B_i φ_i), B_i — матрица 2×2
+    (масса −m²/ρ на диагонали + член Паули ±i(σ·∇U)/ρ). f — (n, 2)."""
+    order = np.argsort(J, kind='stable'); I, J = I[order], J[order]; ph = np.ones(len(I)) if phase is None else phase[order]
+    starts = np.searchsorted(J, np.arange(n + 1)); coef = math.sqrt(rho) / (2 * math.pi * math.sqrt(6))
+    B = np.broadcast_to((-m * m / rho) * np.eye(2), (n, 2, 2)) if Bx is None else Bx
+    phi = np.zeros((n, 2), complex); src = np.asarray(f, complex).copy(); w = coef * ph
+    for j in range(n):
+        s0, s1 = starts[j], starts[j + 1]
+        if s1 > s0: phi[j] = w[s0:s1] @ src[I[s0:s1]]
+        src[j] = src[j] + B[j] @ phi[j]
+    return phi

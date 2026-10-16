@@ -29,20 +29,20 @@ def poisson11(rho=4.0, L=12.0, seed=3):
 
 # ---------- 3+1: то же правило в четырёх осях ----------
 def r_for_density31(rho): return r_for_density(rho, 4)
-def points_in_box31(box, r): return crystal(box, r)
+def points_in_box31(box, r, shift=None): return crystal(box, r, shift)
 
-def gold31(rho=1.0, shape='diamond', H=10.0, Rc=7.0, Rs=3.0):
+def gold31(rho=1.0, shape='diamond', H=10.0, Rc=7.0, Rs=3.0, shift=None):
     """3+1: 'diamond' — причинный ромб высоты H; 'cylinder' — цилиндр радиуса Rc ∩ конусы источника (радиус Rs при t = 0) и
-    наблюдения (как hydro4b.py); 'tube' — ящик для опыта Кулона."""
+    наблюдения (как hydro4b.py); 'tube' — ящик для опыта Кулона. shift — центр шара тени (4 числа): «сдвиг фазона», ансамбль миров."""
     r = r_for_density31(rho)
     if shape == 'diamond':
-        hh = H / 2; P = points_in_box31([(-hh, hh)] + [(-hh, hh)] * 3, r); P = P[np.abs(P[:, 0]) + np.linalg.norm(P[:, 1:], axis=1) <= hh]
+        hh = H / 2; P = points_in_box31([(-hh, hh)] + [(-hh, hh)] * 3, r, shift); P = P[np.abs(P[:, 0]) + np.linalg.norm(P[:, 1:], axis=1) <= hh]
     elif shape == 'cylinder':
-        P = points_in_box31([(-0.6, H + 0.1)] + [(-Rc, Rc)] * 3, r); rr = np.linalg.norm(P[:, 1:], axis=1)
+        P = points_in_box31([(-0.6, H + 0.1)] + [(-Rc, Rc)] * 3, r, shift); rr = np.linalg.norm(P[:, 1:], axis=1)
         P = P[rr <= np.minimum(Rc, np.minimum(Rs + np.maximum(P[:, 0], 0) + 0.6, Rc + (H - P[:, 0])))]
     else:
         raise ValueError(shape)
-    return World(P, 'gold31', rho, {'shape': shape, 'H': H, 'Rc': Rc, 'Rs': Rs})
+    return World(P, 'gold31', rho, {'shape': shape, 'H': H, 'Rc': Rc, 'Rs': Rs, 'shift': shift})
 
 def make(kind='gold11', **kw):
     return {'gold11': gold11, 'poisson11': poisson11, 'gold31': gold31}[kind](**kw)
@@ -64,3 +64,12 @@ def unit_crystal(th, thc, rho=4.0, L=12.0):
         _, u = np.unique(np.round(X, 7), axis=0, return_index=True); X, sh = X[u], sh[u]
         keep = np.abs(X[:, 0]) + np.abs(X[:, 1]) <= L; X, sh = X[keep], sh[keep]; r *= math.sqrt(rho / (len(X) / (2 * L * L)))
     o = np.argsort(X[:, 0], kind='stable'); return World(X[o], 'unit', rho, {'L': L, 'theta': th, 'window_r': r}), sh[o]
+
+def gold11_shift(rho=4.0, L=12.0, c=(0.0, 0.0)):
+    """тот же золотой мир 1+1, но шар тени сдвинут на c = (c_t, c_x) («сдвиг фазона»): тот же закон, другие события —
+    честный ансамбль миров для усреднения измерителей (у сдвинутого мира нет точной симметрии x → −x)."""
+    r = r_for_density(rho, 2); ct, cx = c; tl, th = -L, L
+    a, ap = zt_range(tl / ST, th / ST, (ct - r) / SI, (ct + r) / SI); b, bp = zt_range(-L, L, cx - r, cx + r)
+    T = np.repeat(a * ST, len(b)); X = np.tile(b, len(a)); W = np.repeat((ap * SI - ct) ** 2, len(b)) + np.tile((bp - cx) ** 2, len(a))
+    P = np.c_[T, X][W <= r * r]; P = P[np.abs(P[:, 0]) + np.abs(P[:, 1]) <= L]
+    return World(P, 'gold11', rho, {'L': L, 'window_r': r, 'shift': (ct, cx)})

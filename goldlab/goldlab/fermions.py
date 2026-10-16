@@ -158,11 +158,11 @@ def helium_order(w, e2=0.2, Z=2.0, m=1.0, log=print):
     return dict(Ec=Ec, E=(E0, E1), FN=FN, fid=fid, J=J, K=K, J00=J00, Jc=Jc, Kc=Kc, J00c=J00c, Eh=Eh, hc=hc, cs=cs, om=om, spec=spec)
 
 # ---------- две частицы с взаимодействием как динамика (dirac-doc §15): полная лестница прямой развёрткой по слоям ----------
-def dirac_component_K(w, Uf, m=1.0, rho=4.0, side=1):
+def dirac_component_K(w, Uf, m=1.0, rho=None, side=1):
     """плотный K компоненты Дирака: световой уголок с фазой поля Uf(t, x), без вставки (dirac-doc §12)."""
     from .causal import causal
     from .propagate import corner_phase_general
-    t, x, n = w.t, w.x, w.n; C = causal(w.X); I, J = np.nonzero(C); Phi = np.zeros((n, n), complex)
+    rho = w.rho if rho is None else rho; t, x, n = w.t, w.x, w.n; C = causal(w.X); I, J = np.nonzero(C); Phi = np.zeros((n, n), complex)
     for s0 in range(0, len(I), 400000):
         sl = slice(s0, s0 + 400000); Phi[I[sl], J[sl]] = 0.5 * np.exp(1j * corner_phase_general(Uf, t[I[sl]], x[I[sl]], t[J[sl]], x[J[sl]], side))
     return np.linalg.solve((np.eye(n) - Phi * (-m * m / rho)).T, Phi.T).T, C
@@ -268,10 +268,11 @@ def pair_physical(w, e2=0.2, Z=2.0, m=1.0, rho=4.0, db=0.004, log=print):
     return dict(w=(wa, wb), E=(E0, E1), ci=(E0c, E1c, EFc, EBc, EF1, EB1), F=out['F'], BB=out['BB'])
 
 # ---------- вершина, одинаковая для всех состояний: векторная (калибровочная) связь (dirac-doc §17) ----------
-def pair_vector(w, e2=0.2, Z=2.0, m=1.0, rho=4.0, log=print):
+def pair_vector(w, e2=0.2, Z=2.0, m=1.0, rho=None, log=print):
     """W(z₁, z₂) = i·(e²/ρ²)·(Ē − U(x₁))(Ē − U(x₂))·[несравнимы] — без измеренных чисел; Ē — энергия частицы в полюсе канала
     (для пары a, b — средняя) [приближение «полюсное»]. Каналы: фермионы a∧b, бозоны a∨b, бозоны a·a; эталон — КВ двух тел."""
     from . import fields as Fl
+    rho = w.rho if rho is None else rho
     be = e2 / 2; Fn = Z * e2 / 2; N_, Lg = 512, 64.0; xg = (np.arange(N_) - N_ / 2) * (Lg / N_); hh = Lg / N_; kf = 2 * np.pi * np.fft.fftfreq(N_, d=hh)
     Dm = np.real_if_close(np.fft.ifft(1j * kf[:, None] * np.fft.fft(np.eye(N_), axis=0), axis=0)); Vd = np.diag(Fn * np.abs(xg))
     ev, vec = np.linalg.eigh(np.block([[-1j * Dm + Vd, m * np.eye(N_)], [m * np.eye(N_), 1j * Dm + Vd]]))
@@ -368,3 +369,18 @@ def lithium_pairs(w, e2=0.2, Z=3.0, m=1.0, rho=4.0, log=print):
             S = Ob.spectrum(tR, s, ow); S /= S.max(); res[on] = min(Ob.peaks(ow, S, 0.03), key=lambda z: abs(z[0] - (Ec[i] + Ec[j] + pc[(i, j)] * on)))[0]
         sh[(i, j)] = res[1] - res[0]; del Wm; log(f'пара {i}{j}: сдвиг {sh[(i, j)]:+.4f} (непр. {pc[(i, j)]:+.4f})')
     return dict(E=E[:3], Ec=Ec, pc=pc, sh=sh, E3=E3, E31=E31, Epair=float(sum(E[:3]) + sum(pc.values())), Etot=float(sum(Ec) + sum(sh.values())))
+
+def pair_ensemble(rho=4.0, L=24.0, nw=4, seed=7, log=print):
+    """ансамбль «сдвигов фазона»: тот же закон мира, другие события; сдвиги пар (векторная вершина) усредняются по мирам."""
+    from .worlds import gold11_shift
+    from .core import r_for_density
+    rs = np.random.default_rng(seed); r = r_for_density(rho, 2)
+    shifts = [(0.0, 0.0)] + [tuple(r * np.sqrt(rs.uniform()) * np.array([np.cos(a), np.sin(a)])) for a in rs.uniform(0, 2 * np.pi, nw - 1)]
+    rows = []
+    for c in shifts:
+        out = pair_vector(gold11_shift(rho, L, c), log=lambda *a: None); rows.append(out); log(f'мир {c}: ' + ', '.join(f'{k} {out[k][1] - out[k][0]:+.4f}' for k in ('F', 'B', 'BB')))
+    res = {}
+    for k in ('F', 'B', 'BB'):
+        d = np.array([o[k][1] - o[k][0] for o in rows]); res[k] = (float(d.mean()), float(d.std(ddof=1) / np.sqrt(len(d))), float(rows[0][k][2] - rows[0][k][3]))
+    rFB = np.array([(o['F'][1] - o['F'][0]) / (o['B'][1] - o['B'][0]) for o in rows]); res['FB'] = (float(rFB.mean()), float(rFB.std(ddof=1) / np.sqrt(len(rFB))))
+    return res

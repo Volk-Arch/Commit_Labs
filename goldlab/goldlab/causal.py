@@ -51,3 +51,56 @@ def mm_dimension(X):
     g = lambda d: gamma(d + 1) * gamma(d / 2) / (4 * gamma(3 * d / 2)) - f
     try: return brentq(g, 1.01, 8.0), f
     except ValueError: return float('nan'), f
+
+def layers31(X, rho, nmax=2, tc_factor=2.6):
+    """слои 3+1: все пары i ≺ j, у которых в интервале не больше nmax событий; возвращает (I, J, n). nmax = 0 — связи.
+    Интервал (i, j) целиком из «кандидатов» j (τ(k, j) ≤ τ(i, j) < τ_cut), поэтому n точно. Ускорение — numba, если есть."""
+    tc2 = (tc_factor * rho ** -0.25) ** 2
+    try:
+        import numba
+    except ImportError:
+        numba = None
+    if numba is None:
+        I_, J_, N_ = [], [], []
+        for j in range(1, len(X)):
+            d = X[j] - X[:j]; tau2 = d[:, 0] ** 2 - (d[:, 1:] ** 2).sum(1); c = np.nonzero((d[:, 0] > 0) & (tau2 > 1e-12) & (tau2 < tc2))[0]
+            if len(c) == 0: continue
+            Q = X[c]; e = Q[None, :, :] - Q[:, None, :]; prec = (e[..., 0] > 0) & (e[..., 0] ** 2 - (e[..., 1:] ** 2).sum(-1) > 1e-12)
+            nn = prec.sum(1); k = nn <= nmax; I_.append(c[k]); J_.append(np.full(k.sum(), j)); N_.append(nn[k])
+        return np.concatenate(I_), np.concatenate(J_), np.concatenate(N_)
+    return _layers31_nb(np.ascontiguousarray(X, dtype=np.float64), tc2, nmax)
+
+def _layers31_nb(X, tc2, nmax):
+    import numba
+    global _L31
+    if '_L31' not in globals():
+        @numba.njit(cache=False)
+        def f(X, tc2, nmax):
+            n = X.shape[0]; cap = 1 << 22; I = np.empty(cap, np.int32); J = np.empty(cap, np.int32); N = np.empty(cap, np.int8); m = 0
+            cand = np.empty(n, np.int64)
+            for j in range(1, n):
+                q = 0
+                for i in range(j):
+                    dt = X[j, 0] - X[i, 0]
+                    if dt <= 0: continue
+                    t2 = dt * dt - (X[j, 1] - X[i, 1]) ** 2 - (X[j, 2] - X[i, 2]) ** 2 - (X[j, 3] - X[i, 3]) ** 2
+                    if t2 > 1e-12 and t2 < tc2: cand[q] = i; q += 1
+                for a in range(q):
+                    i = cand[a]; cnt = 0
+                    for b in range(q):
+                        k = cand[b]; dt = X[k, 0] - X[i, 0]
+                        if dt <= 0: continue
+                        if dt * dt - (X[k, 1] - X[i, 1]) ** 2 - (X[k, 2] - X[i, 2]) ** 2 - (X[k, 3] - X[i, 3]) ** 2 > 1e-12:
+                            cnt += 1
+                            if cnt > nmax: break
+                    if cnt <= nmax:
+                        if m >= I.shape[0]:
+                            I2 = np.empty(2 * I.shape[0], np.int32); I2[:m] = I[:m]; I = I2
+                            J2 = np.empty(2 * J.shape[0], np.int32); J2[:m] = J[:m]; J = J2
+                            N2 = np.empty(2 * N.shape[0], np.int8); N2[:m] = N[:m]; N = N2
+                        I[m] = i; J[m] = j; N[m] = cnt; m += 1
+            return I[:m], J[:m], N[:m]
+        _L31 = f
+    return _L31(X, tc2, nmax)
+
+LAYER_WEIGHTS = {0: (1.0,), 1: (2.0, -2.0), 2: (3.0, -7.0, 4.0)}   # выведены: нормировка, нет хвоста 1/t, нет следующего порядка (dirac-doc §23)
