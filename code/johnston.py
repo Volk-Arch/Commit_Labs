@@ -1,157 +1,63 @@
 #!/usr/bin/env python3
-"""ПРОПАГАТОР НА ПОРЯДКЕ: скорость убывания флуктуаций.
+"""СУММА ИСТОРИЙ С ФАЗОЙ ∝ СОБСТВЕННОЙ ДЛИНЕ ЗВЕНА (в духе пропагатора Джонстона).
+ψ_K = Σ_{J→K} κ·e^{i m s_JK}·ψ_J — сумма, а не среднее; κ — одно число на весь мир (не по событию).
+Число цепочек растёт экспоненциально, поэтому есть критическое κ_c, при котором амплитуда плоской волны
+не растёт и не гаснет. Ожидание по стационарной фазе: сумма по путям выделяет пути с почти максимальным
+собственным временем, и пропагатор ~ e^{i m_eff τ}.
+Проверки: (1) κ_c(m); (2) при κ_c — сохраняется ли |ψ| плоской волны и Σ|ψ|² пакета на срезах;
+(3) точечный источник: зависит ли фаза только от τ, какая частота против m."""
+import sys, math, numpy as np
+_a = sys.argv; sys.argv = sys.argv[:1]
+import chiral as CH
+sys.argv = _a
 
-Строим то, что уже построено (Джонстон, arXiv:0806.3083):
+def setup(rho=4.0, L=24.0):
+    w = CH.sym_world(rho, L); R = CH.build_order(w, 'proj'); Lk = CH.links_of(R)
+    I, J = np.nonzero(Lk); o = np.argsort(J, kind='stable'); I, J = I[o], J[o]
+    d = w.X[J] - w.X[I]; s = np.sqrt(d[:, 0] ** 2 - d[:, 1] ** 2)
+    st = np.searchsorted(J, np.arange(w.n)); en = np.searchsorted(J, np.arange(w.n), side='right')
+    return w, R, dict(I=I, J=J, s=s, st=st, en=en)
 
-    K = I + Phi + b Phi^2 + b^2 Phi^3 + ... = I + Phi (I - b Phi)^{-1}
+def psum(w, LK, init, kappa, m, extra=None):
+    I, st, en = LK['I'], LK['st'], LK['en']
+    wt = kappa * np.exp(1j * m * LK['s'])
+    if extra is not None: wt = wt * extra
+    psi = np.zeros(w.n, complex); first = min(init)
+    for k, v in init.items(): psi[k] = v
+    for j in range(first + 1, w.n):
+        if j in init: continue
+        a, b = st[j], en[j]
+        if a < b: psi[j] = (psi[I[a:b]] * wt[a:b]).sum()
+    return psi
 
-где Phi = a A (A — матрица причинности, цепи) при a = 1/2, b = -m^2/rho
-в 1+1. Там совпадение с непрерывным запаздывающим пропагатором есть
-ТОЧНОЕ ТОЖДЕСТВО для среднего по засевам — значит это контроль
-реализации, а не результат.
-
-ДЫРА, на которую идём. У Джонстона: «по флуктуациям пропагатора на
-отдельных засевах есть лишь предварительные численные указания, что они
-убывают с плотностью, и СКОРОСТЬ не установлена».
-
-Скорость мы сегодня замерили с другой стороны (`qclock-doc.md`):
-точность часов порядка s = (0.286 +- 0.029) N^{-0.53 +- 0.02},
-пуассоновский закон. Если флуктуации пропагатора идут тем же законом —
-значит дробовой шум объёма и есть их источник, и скорость выведена.
-
-Счёт берётся без обращения матриц: K = Phi + b Phi K даёт
-w[j] = K[j,q], где w[j] = Phi[j,q] + b sum_i Phi[j,i] w[i], и при
-обходе j в порядке УБЫВАНИЯ времени все нужные w[i] уже посчитаны —
-один проход O(N^2), ряд обрывается сам (Phi нильпотентна).
-
-КОНТРОЛИ:
-  1. m = 0 обязано дать K = a = 1/2 ровно (J_0(0) = 1);
-  2. среднее по засевам обязано совпасть с (1/2) J_0(m tau) — точное
-     тождество Джонстона; отличие укажет на ошибку реализации;
-  3. обрыв ряда: число шагов обязано равняться длине длиннейшей цепи;
-  4. флуктуации обязаны убывать с плотностью (у Джонстона качественно).
-
-  python3 johnston.py
-"""
-import math
-
-import numpy as np
-from scipy.special import j0
-
-
-def sprinkle_11(rho, T, rs):
-    """Засев в causal diamond 1+1. Площадь T^2/2, N ~ Poisson(rho T^2/2).
-    Возвращает точки, отсортированные по времени, с вершинами."""
-    area = T * T / 2.0
-    n = rs.poisson(rho * area)
-    # светоконусные координаты: u,v in [0,T] с u+v<=... проще: ромб
-    u = rs.random(n) * T
-    v = rs.random(n) * T
-    t = (u + v) / 2.0
-    x = (u - v) / 2.0
-    keep = (t > 0) & (t < T) & (np.abs(x) < np.minimum(t, T - t))
-    t, x = t[keep], x[keep]
-    t = np.concatenate([[0.0], t, [T]])
-    x = np.concatenate([[0.0], x, [0.0]])
-    o = np.argsort(t)
-    return t[o], x[o], int(np.argmin(t[o])), int(np.argmax(t[o]))
-
-
-def causal(t, x):
-    dt = t[None, :] - t[:, None]
-    dx = np.abs(x[None, :] - x[:, None])
-    return (dt > 0) & (dt > dx)
-
-
-def prop(t, x, A, a, b, q):
-    """K[p,q] для всех p одним проходом по убыванию времени."""
-    n = len(t)
-    Phi = a * A.astype(np.float64)
-    w = np.zeros(n)
-    steps = 0
-    for j in range(n - 1, -1, -1):
-        s = Phi[j, q]
-        row = Phi[j]
-        nz = np.nonzero(row)[0]
-        if len(nz):
-            s += b * float(row[nz] @ w[nz])
-            steps += 1
-    # повтор правильным порядком (вектор w заполняется по ходу)
-        w[j] = s
-    return w, steps
-
-
-def run(rho, T, m, nspr, rs):
-    a, b = 0.5, -m * m / rho
-    vals = []
-    chain = []
-    for _ in range(nspr):
-        t, x, p, q = sprinkle_11(rho, T, rs)
-        A = causal(t, x)
-        w, _ = prop(t, x, A, a, b, q)
-        vals.append(w[p])
-        # длина длиннейшей цепи (контроль 3)
-        h = np.zeros(len(t), dtype=int)
-        for j in range(len(t)):
-            pre = np.nonzero(A[:, j])[0]
-            h[j] = (h[pre].max() + 1) if len(pre) else 0
-        chain.append(int(h[q]))
-    v = np.array(vals)
-    return v, float(np.mean(chain)), len(t)
-
-
-def main():
-    print(__doc__.split('  python3')[0].rstrip())
-    print()
-    rs = np.random.default_rng(10102026)
-    T = 1.0
-    print('КОНТРОЛЬ 1: m = 0 обязано дать ровно a = 1/2')
-    v, ch, n = run(400.0, T, 0.0, 6, rs)
-    print(f'  K = {v.mean():.10f} ± {v.std(ddof=1):.1e}  (ожидание 0.5)')
-    print()
-    print('КОНТРОЛЬ 2: среднее против (1/2) J_0(m tau), '
-          'точное тождество Джонстона')
-    print(f"{'m*T':>7}{'rho':>8}{'N':>7}{'<K> замер':>14}"
-          f"{'(1/2)J_0(mT)':>15}{'отн.':>9}{'цепь':>7}")
-    for mT in (0.0, 2.0, 5.0, 8.0, 12.0):
-        rho = 1600.0
-        v, ch, n = run(rho, T, mT / T, 25, rs)
-        pred = 0.5 * j0(mT)
-        rel = (v.mean() - pred) / max(abs(pred), 1e-12)
-        print(f'{mT:>7.1f}{rho:>8.0f}{n:>7}{v.mean():>14.6f}'
-              f'{pred:>15.6f}{rel:>+9.3f}{ch:>7.1f}', flush=True)
-    print()
-    print('ГЛАВНОЕ: скорость убывания флуктуаций с плотностью')
-    print(f"{'rho':>8}{'N':>7}{'<K>':>12}{'ст.откл.':>12}"
-          f"{'отн. флукт.':>14}{'засевов':>9}")
-    rows = []
-    mT = 5.0
-    for rho in (200.0, 400.0, 800.0, 1600.0, 3200.0):
-        nspr = int(max(40, 4000 / math.sqrt(rho)))
-        v, ch, n = run(rho, T, mT / T, nspr, rs)
-        pred = 0.5 * j0(mT)
-        sd = float(v.std(ddof=1))
-        rel = sd / abs(pred)
-        rows.append((n, rho, float(v.mean()), sd, rel, nspr))
-        print(f'{rho:>8.0f}{n:>7}{v.mean():>12.6f}{sd:>12.6f}'
-              f'{rel:>14.5f}{nspr:>9}', flush=True)
-    R = np.array([(r[0], r[4]) for r in rows], dtype=float)
-    err = np.array([r[4] / math.sqrt(2 * (r[5] - 1)) for r in rows])
-    x, y = np.log(R[:, 0]), np.log(R[:, 1])
-    w = 1.0 / (err / R[:, 1]) ** 2
-    Amat = np.vstack([x, np.ones_like(x)]).T
-    W = np.diag(w)
-    cov = np.linalg.inv(Amat.T @ W @ Amat)
-    beta = cov @ (Amat.T @ W @ y)
-    se = np.sqrt(np.diag(cov))
-    print()
-    print(f'  ЗАКОН: отн. флуктуация ~ N^a,  a = {beta[0]:.4f} ± {se[0]:.4f}')
-    print(f'  закон часов (замер сегодня): −0.5296 ± 0.0245 -> отличие '
-          f'{abs(beta[0]+0.5296)/math.hypot(se[0],0.0245):.1f} сигмы')
-    print(f'  чистый пуассон −0.5 -> отличие {abs(beta[0]+0.5)/se[0]:.1f} сигмы')
-    res = (y - Amat @ beta) / (err / R[:, 1])
-    print('  остатки (сигм):', ', '.join(f'{r:+.1f}' for r in res))
-
+def slices_mean(w, psi, times, f=lambda p: np.abs(p)):
+    X = w.X; out = []
+    for t in times:
+        sl = (np.abs(X[:, 0] - t) < 0.35) & (np.abs(X[:, 1]) < 24 - abs(t) - 4)
+        out.append(f(psi[sl]))
+    return np.array(out)
 
 if __name__ == '__main__':
-    main()
+    w, R, LK = setup(); X = w.X; n = w.n
+    band0 = {k: 1.0 for k in np.nonzero(np.abs(X[:, 0] + 10) < 0.35)[0]}
+    times = np.arange(-8, 9, 2.0)
+    print(f'мир ρ = 4: событий {n}, звеньев {len(LK["I"])}, средняя собственная длина звена {LK["s"].mean():.3f}')
+    kc = {}
+    for m in (0.0, 1.0, 2.0, 4.0):
+        lo, hi = 0.01, 1.0
+        for _ in range(30):
+            k = math.sqrt(lo * hi); v = slices_mean(w, psum(w, LK, band0, k, m), times, lambda p: np.abs(p).mean())
+            slope = np.polyfit(times[2:], np.log(v[2:] + 1e-300), 1)[0]
+            if slope > 0: hi = k
+            else: lo = k
+        kc[m] = k
+        v = slices_mean(w, psum(w, LK, band0, k, m), times, lambda p: np.abs(p).mean())
+        coh = slices_mean(w, psum(w, LK, band0, k, m), times, lambda p: abs(p.sum()) / np.abs(p).sum())
+        print(f'm = {m}: κ_c = {k:.4f}; плоская волна |ψ| на t = −8…8: ' + ' '.join(f'{x:.3f}' for x in v / v[0]) +
+              f'; когерентность по срезу {coh[-1]:.3f}')
+        # пакет: Σ|ψ|² по срезам
+        pk = {kk: math.exp(-X[kk, 1] ** 2 / 8) for kk in band0 if abs(X[kk, 1]) < 7}
+        p2 = slices_mean(w, psum(w, LK, pk, k, m), times, lambda p: (np.abs(p) ** 2).sum())
+        print(f'        пакет Σ|ψ|² (к первому срезу): ' + ' '.join(f'{x:.2f}' for x in p2 / p2[0]))
+        sys.stdout.flush()
+    np.save('/home/claude/data/johnston_kc.npy', kc, allow_pickle=True)

@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Золотая лаборатория</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&family=Unbounded:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --paper: #eceff3; --panel: #f7f8fa; --ink: #14171d; --muted: #5a6270; --line: #c7cdd7;
+  --gold: #a87a0a; --gold-soft: rgba(168,122,10,.14); --cyan: #1a6a86; --wall: #8a3b2e; --violet: #6a4fa3; --dot: rgba(20,23,29,.30);
+  --ok: #2f7a3a; --near: #9a6a00; --off: #b03a2e;
+  --f-display: "Unbounded", "Onest", system-ui, sans-serif;
+  --f-body: "Onest", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --paper: #0d1015; --panel: #141920; --ink: #e5e8ee; --muted: #8f97a6; --line: #29303b;
+  --gold: #e3b640; --gold-soft: rgba(227,182,64,.16); --cyan: #55b6d6; --wall: #e08a74; --violet: #a891e0; --dot: rgba(229,232,238,.32);
+  --ok: #6cc47a; --near: #e0b040; --off: #f0806e; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --paper: #0d1015; --panel: #141920; --ink: #e5e8ee; --muted: #8f97a6; --line: #29303b;
+  --gold: #e3b640; --gold-soft: rgba(227,182,64,.16); --cyan: #55b6d6; --wall: #e08a74; --violet: #a891e0; --dot: rgba(229,232,238,.32);
+  --ok: #6cc47a; --near: #e0b040; --off: #f0806e; color-scheme: dark }
+* { box-sizing: border-box }
+html, body { margin: 0; background: var(--paper); color: var(--ink); font: 15px/1.5 var(--f-body) }
+button, input, select { font: inherit; color: inherit }
+header { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--line); flex-wrap: wrap }
+header h1 { font: 700 18px/1.2 var(--f-display); margin: 0; letter-spacing: .01em }
+header h1 span { color: var(--gold) }
+.badge { font: 500 12px var(--f-mono); padding: 3px 8px; border: 1px solid var(--line); border-radius: 99px; color: var(--muted) }
+.badge.live { color: var(--ok); border-color: var(--ok) }
+header .sp { flex: 1 }
+.ghost { background: none; border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; cursor: pointer; color: var(--muted) }
+.ghost:hover { color: var(--ink); border-color: var(--muted) }
+main { display: grid; grid-template-columns: 270px minmax(0, 1fr) 280px; gap: 0; min-height: calc(100vh - 60px) }
+aside { padding: 16px; border-right: 1px solid var(--line); overflow: auto }
+aside.right { border-right: none; border-left: 1px solid var(--line) }
+section.center { padding: 18px 22px 40px; overflow: auto; min-width: 0 }
+.blk { font: 500 11px var(--f-display); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 16px 0 6px }
+.blk:first-child { margin-top: 0 }
+.exp { display: block; width: 100%; text-align: left; background: none; border: none; border-radius: 8px; padding: 6px 10px; cursor: pointer; line-height: 1.3 }
+.exp:hover { background: var(--gold-soft) }
+.exp.on { background: var(--gold-soft); box-shadow: inset 3px 0 0 var(--gold) }
+.exp small { display: block; color: var(--muted); font: 400 11px var(--f-mono); margin-top: 2px }
+.dotst { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; background: var(--line) }
+.dotst.ok { background: var(--ok) } .dotst.near { background: var(--near) } .dotst.off { background: var(--off) }
+h2 { font: 700 20px/1.25 var(--f-display); margin: 0 0 6px }
+.what { color: var(--muted); max-width: 72ch; margin: 0 0 6px }
+.meta { font: 12px var(--f-mono); color: var(--muted); margin-bottom: 10px }
+.origin { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: baseline; margin-bottom: 16px; font-size: 13px; max-width: 90ch }
+.origin .k { font: 600 11px var(--f-body); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-right: 2px }
+.origin .core { color: var(--ok) }
+.handchip { border: 1px dashed var(--near); color: var(--ink); border-radius: 6px; padding: 1px 8px; background: none }
+.origin .none { color: var(--ok) }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px }
+.card h3 { font: 600 13px var(--f-body); margin: 0 0 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px }
+.form { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px 14px }
+.form label { display: block; font-size: 12px; color: var(--muted) }
+.form input, .form select { width: 100%; margin-top: 3px; padding: 6px 8px; background: var(--paper); border: 1px solid var(--line); border-radius: 7px; font-family: var(--f-mono); font-size: 13px }
+.actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 12px }
+.chip { border: 1px solid var(--line); background: none; border-radius: 99px; padding: 4px 11px; cursor: pointer; font-size: 13px }
+.chip:hover { border-color: var(--gold) }
+.go { background: var(--gold); color: #fff; border: none; border-radius: 9px; padding: 8px 18px; font-weight: 600; cursor: pointer }
+:root[data-theme="dark"] .go { color: #14171d }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .go { color: #14171d } }
+.go:disabled { opacity: .45; cursor: not-allowed }
+.status { font: 13px var(--f-mono); color: var(--muted) }
+.status.err { color: var(--off) }
+.canvaswrap { position: relative }
+canvas#world { width: 100%; aspect-ratio: 1 / 1; display: block; border-radius: 8px; background: var(--paper); cursor: crosshair; touch-action: none }
+.hint { font-size: 12px; color: var(--muted); margin-top: 6px }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin-top: 6px; align-items: center }
+.sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 5px; vertical-align: -1px }
+.ramp { display: inline-block; width: 90px; height: 10px; border-radius: 3px; vertical-align: -1px; margin: 0 5px }
+table.nums { width: 100%; border-collapse: collapse; font-size: 14px }
+table.nums th { text-align: left; font-weight: 500; font-size: 12px; color: var(--muted); padding: 4px 6px; border-bottom: 1px solid var(--line) }
+table.nums td { padding: 6px; border-bottom: 1px solid var(--line); vertical-align: top }
+table.nums td.v { font: 500 14px var(--f-mono); white-space: nowrap }
+table.nums td.e { font: 13px var(--f-mono); color: var(--muted); white-space: nowrap }
+table.nums td.pin { font: 13px var(--f-mono); color: var(--violet); white-space: nowrap }
+.st { font: 600 13px var(--f-mono); white-space: nowrap }
+.st.ok { color: var(--ok) } .st.near { color: var(--near) } .st.off { color: var(--off) }
+.notes { margin: 10px 0 0; padding-left: 18px; color: var(--muted); font-size: 13px }
+.chart { margin-top: 6px }
+.chart svg { width: 100%; height: auto; display: block; overflow: visible }
+.chart .t { font: 600 13px var(--f-body); margin: 4px 0 }
+.tip { position: absolute; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 6px 9px; font: 12px var(--f-mono); box-shadow: 0 4px 14px rgba(0,0,0,.12); white-space: nowrap; z-index: 5; display: none }
+.run { display: block; width: 100%; text-align: left; border: 1px solid transparent; background: none; border-radius: 8px; padding: 7px 9px; cursor: pointer; margin-bottom: 4px }
+.run:hover { border-color: var(--line) }
+.run.on { border-color: var(--gold); background: var(--gold-soft) }
+.run b { font-weight: 500; font-size: 13px }
+.run small { display: block; font: 11px var(--f-mono); color: var(--muted) }
+.pinbtn { font-size: 12px }
+.empty { color: var(--muted); font-size: 13px; padding: 10px 0 }
+.princ { font-size: 12px; color: var(--muted); border-top: 1px solid var(--line); margin-top: 18px; padding-top: 12px }
+.princ b { color: var(--ink); font-weight: 500 }
+.jobs .run small { white-space: normal }
+@media (max-width: 1100px) { main { grid-template-columns: 230px minmax(0, 1fr) } aside.right { grid-column: 1 / -1; border-left: none; border-top: 1px solid var(--line) } }
+@media (max-width: 760px) {
+  header { padding: 12px 16px }
+  main { grid-template-columns: minmax(0, 1fr) } aside { border-right: none; border-bottom: 1px solid var(--line); padding: 12px 16px }
+  section.center { padding: 16px }
+  .row { grid-template-columns: minmax(0, 1fr) }
+  #cat { display: flex; gap: 6px; overflow-x: auto; flex-wrap: nowrap } #cat .blk { display: none }
+  #cat .exp { white-space: nowrap; width: auto; border: 1px solid var(--line) } #cat .exp small { display: none }
+  table.nums td.e, table.nums th.e { display: none }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Золотая <span>лаборатория</span></h1>
+  <span class="badge" id="mode">…</span>
+  <span class="sp"></span>
+  <button class="ghost" id="theme" title="Тема">◐ тема</button>
+</header>
+<main>
+  <aside id="cat"></aside>
+  <section class="center">
+    <h2 id="title">…</h2>
+    <p class="what" id="what"></p>
+    <div class="meta" id="meta"></div>
+    <div class="origin" id="origin"></div>
+    <div class="card">
+      <h3>Параметры</h3>
+      <div class="form" id="form"></div>
+      <div class="actions">
+        <span class="status" title="Эталоны в таблице чисел сняты при параметрах документа; на коротких окнах «быстро» спектральные числа законно уходят в ≈/✗">пресеты:</span><span id="presets"></span>
+        <span style="flex:1"></span>
+        <span class="status" id="regionlbl"></span>
+        <button class="go" id="go">Посчитать</button>
+      </div>
+      <div class="status" id="jobstatus" style="margin-top:8px"></div>
+    </div>
+    <div class="row">
+      <div class="card">
+        <h3>Мир 1+1</h3>
+        <div class="canvaswrap"><canvas id="world" width="560" height="560" aria-label="События мира 1+1: время вверх, пространство вправо"></canvas></div>
+        <div class="hint" id="worldhint">Время — вверх, пространство — вправо. Протяните мышью прямоугольник, чтобы выделить область (двойной щелчок — снять).</div>
+        <div class="legend" id="ovlegend"></div>
+      </div>
+      <div class="card">
+        <h3>Числа</h3>
+        <div id="nums"><div class="empty">Ещё не считали. Нажмите «Посчитать» или выберите прогон справа.</div></div>
+        <ul class="notes" id="notes"></ul>
+      </div>
+    </div>
+    <div class="card" id="chartscard" style="display:none"><h3>Графики</h3><div id="charts"></div></div>
+  </section>
+  <aside class="right">
+    <div class="blk">Очередь</div>
+    <div class="jobs" id="jobs"><div class="empty">пусто</div></div>
+    <div class="blk">Прогоны этого опыта</div>
+    <div id="runs"><div class="empty">нет</div></div>
+    <div class="princ">
+      <b>Как читать.</b> У каждого числа — эталон из документа и допуск. ✓ — в допуске, ≈ — до трёх допусков, ✗ — дальше. ✗ не прячем: это то, что ещё не сходится.<br><br>
+      <b>Принцип.</b> Ничего не выбрасываем и не подгоняем; приближения помечены в описании опыта.
+    </div>
+  </aside>
+</main>
+<div class="tip" id="tip"></div>
+<script>/*BOOT*/</script>
+<script>
+"use strict";
+const MODE = window.GOLDLAB_MODE || 'static', DATA = window.GOLDLAB_DATA || null;
+const $ = id => document.getElementById(id);
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+const S = { cat: [], exp: null, params: {}, region: null, run: null, pinned: null, runs: [], world: null, jobs: [], drag: null };
+
+// ---------- данные: живой сервер или вшитые прогоны ----------
+const api = {
+  async catalog() { return MODE === 'live' ? (await fetch('/api/catalog')).json() : DATA.catalog; },
+  async runs() {
+    if (MODE === 'live') return (await fetch('/api/runs')).json();
+    return DATA.runs.map(r => { const st = (r.numbers || []).map(n => n.status); return { id: r.id, exp: r.exp, saved: r.saved, seconds: r.seconds, params: r.params,
+      ok: st.filter(s => s === 'ok').length, near: st.filter(s => s === 'near').length, off: st.filter(s => s === 'off').length }; });
+  },
+  async load(id) { return MODE === 'live' ? (await fetch('/api/run/' + id)).json() : DATA.runs.find(r => r.id === id); },
+  async world(rho, L) {
+    if (MODE === 'live') return (await fetch(`/api/world?kind=gold11&rho=${rho}&L=${L}`)).json();
+    return DATA.world;
+  },
+  async start(body) { return (await fetch('/api/run', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })).json(); },
+  async jobs() { return (await fetch('/api/jobs')).json(); },
+};
+
+// ---------- формат чисел ----------
+function fmt(v, f) {
+  if (v === null || v === undefined) return '—';
+  if (typeof v !== 'number') return String(v);
+  const m = /\{:\.(\d+)([fe])\}/.exec(f || '{:.4f}'); const d = m ? +m[1] : 4;
+  if (m && m[2] === 'e') return v.toExponential(d);
+  if (Math.abs(v) > 0 && Math.abs(v) < Math.pow(10, -d)) return v.toExponential(2);
+  return v.toFixed(d);
+}
+const STSYM = { ok: '✓', near: '≈', off: '✗' };
+function expText(n) {
+  if (n.expected === null || n.expected === undefined) return '';
+  const tol = n.tol === null || n.tol === undefined ? '' : (n.rel ? ` ± ${+(n.tol * 100).toFixed(2)} %` : ` ± ${n.tol}`);
+  return fmt(n.expected, n.fmt) + tol;
+}
+
+// ---------- каталог ----------
+function bestStatus(expId) {
+  const rs = S.runs.filter(r => r.exp === expId); if (!rs.length) return '';
+  const r = rs[0]; return r.off ? 'off' : r.near ? 'near' : 'ok';
+}
+function renderCatalog() {
+  const blocks = []; S.cat.forEach(e => { if (!blocks.includes(e.block)) blocks.push(e.block); });
+  $('cat').innerHTML = blocks.map(b => `<div class="blk">${esc(b)}</div>` + S.cat.filter(e => e.block === b).map(e =>
+    `<button class="exp ${S.exp && S.exp.id === e.id ? 'on' : ''}" data-id="${e.id}"><span class="dotst ${bestStatus(e.id)}"></span>${esc(e.title)}<small>${esc(e.cost || '')} · руками: ${(e.hand || []).length}</small></button>`).join('')).join('');
+  $('cat').querySelectorAll('.exp').forEach(b => b.onclick = () => selectExp(b.dataset.id));
+}
+
+async function selectExp(id, keepRun) {
+  S.exp = S.cat.find(e => e.id === id); S.params = {}; S.exp.params.forEach(p => S.params[p.name] = p.default);
+  if (!S.exp.region) S.region = null;
+  try { history.replaceState(null, '', '#' + id); } catch (e) {}
+  $('jobstatus').textContent = ''; $('jobstatus').className = 'status';
+  renderCatalog(); renderExp(); renderRuns();
+  if (!keepRun) {
+    const r = S.runs.find(r => r.exp === id);
+    if (r) await showRun(r.id); else { S.run = null; renderResult(); }
+  }
+  await refreshWorld();
+}
+
+function renderExp() {
+  const e = S.exp; $('title').textContent = e.title; $('what').textContent = e.what;
+  $('meta').textContent = `эталон: ${e.ref || '—'} · время: ${e.cost || '—'} · id: ${e.id}`;
+  const hand = e.hand || [];
+  $('origin').innerHTML = `<span><span class="k">из ядра</span> <span class="core">мир (тень в шаре) и порядок</span></span>` +
+    `<span class="k" style="margin-left:10px">взято руками</span>` + (hand.length ? hand.map(h => `<span class="handchip">${esc(h)}</span>`).join('') : '<span class="none">ничего — опыт целиком из ядра</span>');
+  $('form').innerHTML = e.params.map(p => {
+    const v = S.params[p.name];
+    if (p.choices) return `<label>${esc(p.label)}<select data-n="${p.name}">${p.choices.map(c => `<option ${c == v ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></label>`;
+    return `<label>${esc(p.label)}<input type="number" data-n="${p.name}" value="${v}" ${p.min !== null ? `min="${p.min}"` : ''} ${p.max !== null ? `max="${p.max}"` : ''} ${p.step !== null ? `step="${p.step}"` : 'step="any"'}></label>`;
+  }).join('') || '<div class="empty">без параметров</div>';
+  $('form').querySelectorAll('[data-n]').forEach(el => el.onchange = () => {
+    S.params[el.dataset.n] = el.tagName === 'SELECT' ? el.value : +el.value;
+    if (['rho', 'L'].includes(el.dataset.n)) refreshWorld();
+  });
+  $('presets').innerHTML = Object.keys(e.presets || {}).map(k => `<button class="chip" data-p="${esc(k)}">${esc(k)}</button>`).join(' ');
+  $('presets').querySelectorAll('.chip').forEach(b => b.onclick = () => {
+    e.params.forEach(p => S.params[p.name] = p.default); Object.assign(S.params, e.presets[b.dataset.p]); renderExp(); refreshWorld();
+  });
+  renderRegionLabel();
+  const live = MODE === 'live'; $('go').disabled = !live;
+  if (!live) { $('jobstatus').textContent = 'Просмотрщик: здесь готовые прогоны. Чтобы считать самому — пульт: python -m goldlab.server (см. СТАРТ.md).'; $('jobstatus').className = 'status'; }
+  $('go').title = live ? '' : 'В просмотрщике только готовые прогоны. Чтобы считать — запустите пульт: python -m goldlab.server';
+  $('worldhint').textContent = e.region
+    ? (e.region === 'point' ? 'Протяните мышью маленький прямоугольник — его центр станет точкой вспышки (двойной щелчок — снять).'
+                            : 'Протяните мышью прямоугольник: опыт возьмёт причинный интервал от его низа до верха (двойной щелчок — снять).')
+    : 'Этот опыт область не использует; мир показан для ориентира, раскраска — из прогона.';
+}
+function renderRegionLabel() {
+  const r = S.region, e = S.exp;
+  $('regionlbl').textContent = !e.region ? '' : r ? `область: t ${r.t0.toFixed(1)}…${r.t1.toFixed(1)}, x ${r.x0.toFixed(1)}…${r.x1.toFixed(1)}` : 'область: по умолчанию';
+}
+
+// ---------- мир ----------
+async function refreshWorld() {
+  const rho = S.params.rho ?? 4, L = S.params.L ?? 12;
+  try { S.world = (S.exp.id.endsWith('31') || S.exp.block.startsWith('Гравит') || ['geom_charge', 'pair', 'nonabelian', 'color'].includes(S.exp.id)) && MODE === 'live'
+        ? await api.world(4, 12) : await api.world(Math.min(rho, 8), Math.min(L, 24)); } catch (err) { S.world = null; }
+  drawWorld();
+}
+let VIEW = null;
+function drawWorld() {
+  const cv = $('world'), dpr = window.devicePixelRatio || 1, W = cv.clientWidth || 400; cv.width = W * dpr; cv.height = W * dpr;
+  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, W);
+  const ov = S.run && S.run.overlay && S.run.overlay.t && S.run.overlay.t.length ? S.run.overlay : null;
+  const src = ov || S.world; if (!src) { VIEW = null; return; }
+  const T = src.t, X = src.x; let R = 0; for (let i = 0; i < T.length; i++) R = Math.max(R, Math.abs(T[i]) + Math.abs(X[i]));
+  R *= 1.04; const pad = 10, sc = (W - 2 * pad) / (2 * R);
+  VIEW = { R, sc, pad, W, px: x => pad + (x + R) * sc, py: t => W - pad - (t + R) * sc, ix: px => (px - pad) / sc - R, it: py => (W - pad - py) / sc - R };
+  g.strokeStyle = css('--line'); g.lineWidth = 1; g.beginPath();
+  g.moveTo(VIEW.px(0), VIEW.py(-R)); g.lineTo(VIEW.px(R), VIEW.py(0)); g.lineTo(VIEW.px(0), VIEW.py(R)); g.lineTo(VIEW.px(-R), VIEW.py(0)); g.closePath(); g.stroke();
+  const n = T.length, rad = Math.max(0.9, Math.min(2.6, 1.3 * W / Math.sqrt(n * 2)));
+  let col = () => css('--dot');
+  const lg = $('ovlegend'); lg.innerHTML = '';
+  if (ov) {
+    const v = ov.v; let lo = Infinity, hi = -Infinity; v.forEach(a => { if (a < lo) lo = a; if (a > hi) hi = a; });
+    const binary = v.every(a => a === 0 || a === 1), signed = lo < 0 && hi > 0, gold = css('--gold'), cyan = css('--cyan'), wall = css('--wall'), dot = css('--dot');
+    const amax = Math.max(Math.abs(lo), Math.abs(hi)) || 1;
+    if (binary) { col = i => v[i] ? gold : dot; lg.innerHTML = `<span><span class="sw" style="background:${gold}"></span>${esc(ov.label)}</span><span><span class="sw" style="background:${dot}"></span>остальные</span>`; }
+    else if (signed) { col = i => { const a = v[i] / amax; return mix(a > 0 ? wall : cyan, Math.abs(a)); };
+      lg.innerHTML = `${esc(ov.label)}: <span>${fmt(-amax, '{:.3f}')}</span><span class="ramp" style="background:linear-gradient(90deg,${cyan},${dot},${wall})"></span><span>${fmt(amax, '{:.3f}')}</span>`; }
+    else { col = i => mix(gold, (v[i] - lo) / ((hi - lo) || 1));
+      lg.innerHTML = `${esc(ov.label)}: <span>${fmt(lo, '{:.3f}')}</span><span class="ramp" style="background:linear-gradient(90deg,${dot},${gold})"></span><span>${fmt(hi, '{:.3f}')}</span>`; }
+  }
+  for (let i = 0; i < n; i++) { g.fillStyle = col(i); g.beginPath(); g.arc(VIEW.px(X[i]), VIEW.py(T[i]), rad, 0, 6.2832); g.fill(); }
+  const r = S.drag || S.region;
+  if (r && S.exp.region) {
+    g.strokeStyle = css('--cyan'); g.lineWidth = 1.5; g.setLineDash([5, 4]);
+    const x0 = VIEW.px(r.x0), x1 = VIEW.px(r.x1), y0 = VIEW.py(r.t1), y1 = VIEW.py(r.t0); g.strokeRect(x0, y0, x1 - x0, y1 - y0); g.setLineDash([]);
+    if (S.exp.region === 'interval') { const xc = (r.x0 + r.x1) / 2, h = (r.t1 - r.t0) / 2, tm = (r.t0 + r.t1) / 2;
+      g.beginPath(); g.moveTo(VIEW.px(xc), VIEW.py(r.t0)); g.lineTo(VIEW.px(xc + h), VIEW.py(tm)); g.lineTo(VIEW.px(xc), VIEW.py(r.t1)); g.lineTo(VIEW.px(xc - h), VIEW.py(tm)); g.closePath();
+      g.fillStyle = 'rgba(85,182,214,.10)'; g.fill(); g.stroke(); }
+    else { g.fillStyle = css('--cyan'); g.beginPath(); g.arc(VIEW.px((r.x0 + r.x1) / 2), VIEW.py((r.t0 + r.t1) / 2), 4, 0, 6.2832); g.fill(); }
+  }
+}
+function mix(c, a) { // цвет c с прозрачностью от a (0..1): маленькие значения — бледные
+  a = Math.max(0.12, Math.min(1, a)); const m = /^#?([0-9a-f]{6})$/i.exec(c);
+  if (!m) return c; const n = parseInt(m[1], 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a.toFixed(3)})`;
+}
+(function wireCanvas() {
+  const cv = $('world'); let start = null;
+  const pos = ev => { const b = cv.getBoundingClientRect(); return [ev.clientX - b.left, ev.clientY - b.top]; };
+  cv.addEventListener('pointerdown', ev => { if (!VIEW || !S.exp || !S.exp.region) return; start = pos(ev); cv.setPointerCapture(ev.pointerId); });
+  cv.addEventListener('pointermove', ev => { if (!start) return; const p = pos(ev);
+    S.drag = { x0: VIEW.ix(Math.min(start[0], p[0])), x1: VIEW.ix(Math.max(start[0], p[0])), t0: VIEW.it(Math.max(start[1], p[1])), t1: VIEW.it(Math.min(start[1], p[1])) }; drawWorld(); });
+  cv.addEventListener('pointerup', () => { if (!start) return; start = null;
+    if (S.drag && (S.drag.t1 - S.drag.t0 > 0.3 || S.exp.region === 'point')) S.region = S.drag; S.drag = null; renderRegionLabel(); drawWorld(); });
+  cv.addEventListener('dblclick', () => { S.region = null; renderRegionLabel(); drawWorld(); });
+  window.addEventListener('resize', () => { drawWorld(); renderCharts(); });
+})();
+
+// ---------- результат ----------
+async function showRun(id) {
+  S.run = await api.load(id);
+  if (S.run && S.run.params) { Object.assign(S.params, S.run.params); S.region = S.run.region || null; renderExp(); }
+  renderResult(); renderRuns(); drawWorld();
+}
+function renderResult() {
+  const r = S.run, pin = S.pinned && S.pinned.exp === (S.exp && S.exp.id) && (!r || S.pinned.id !== r.id) ? S.pinned : null;
+  if (!r) { $('nums').innerHTML = '<div class="empty">Ещё не считали. Нажмите «Посчитать»' + (MODE === 'live' ? '' : ' (в живом пульте)') + ' или выберите прогон справа.</div>'; $('notes').innerHTML = ''; $('chartscard').style.display = 'none'; drawWorld(); return; }
+  const pv = k => { const n = pin && pin.numbers.find(q => q.key === k); return n ? fmt(n.value, n.fmt) : ''; };
+  $('nums').innerHTML = `<div class="status" style="margin-bottom:6px">прогон ${esc(r.id)} · ${r.seconds} с${pin ? ` · <span style="color:var(--violet)">сравнение с ${esc(pin.id)}</span>` : ''}</div>
+    <table class="nums"><tr><th>величина</th><th>значение</th>${pin ? '<th>закреплённый</th>' : ''}<th class="e">эталон</th><th></th></tr>` +
+    r.numbers.map(n => `<tr><td>${esc(n.label)}</td><td class="v">${fmt(n.value, n.fmt)}</td>${pin ? `<td class="pin">${pv(n.key)}</td>` : ''}<td class="e">${expText(n)}</td>
+      <td>${n.status ? `<span class="st ${n.status}" title="${{ ok: 'в допуске', near: 'до трёх допусков', off: 'вне допуска' }[n.status]}">${STSYM[n.status]}</span>` : ''}</td></tr>`).join('') + '</table>';
+  $('notes').innerHTML = (r.notes || []).map(s => `<li>${esc(s)}</li>`).join('');
+  renderCharts();
+}
+
+// ---------- графики (SVG) ----------
+const PAL = ['--gold', '--cyan', '--wall', '--violet'];
+function renderCharts() {
+  const r = S.run, box = $('charts'); if (!r) return;
+  const series = (r.series || []).filter(s => s.lines && s.lines.length);
+  $('chartscard').style.display = series.length ? '' : 'none'; box.innerHTML = '';
+  series.forEach((s, si) => {
+    const div = document.createElement('div'); div.className = 'chart'; box.appendChild(div);
+    const W = Math.max(300, box.clientWidth || 600), H = Math.round(Math.min(300, W * 0.45)), m = { l: 52, r: 14, t: 10, b: 36 };
+    let xl = Infinity, xh = -Infinity, yl = Infinity, yh = -Infinity;
+    s.lines.forEach(l => l.x.forEach((x, i) => { const y = l.y[i]; if (x === null || y === null) return; xl = Math.min(xl, x); xh = Math.max(xh, x); yl = Math.min(yl, y); yh = Math.max(yh, y); }));
+    if (yl > 0 && yl < 0.25 * yh) yl = 0; const py0 = (yh - yl) * 0.06 || 1; yh += py0; if (yl !== 0) yl -= py0;
+    const X = x => m.l + (x - xl) / ((xh - xl) || 1) * (W - m.l - m.r), Y = y => H - m.b - (y - yl) / ((yh - yl) || 1) * (H - m.t - m.b);
+    const ticks = (a, b, n) => { const st = Math.pow(10, Math.floor(Math.log10((b - a) / n || 1))), k = [1, 2, 5, 10].find(k => (b - a) / (st * k) <= n) * st; const out = []; for (let v = Math.ceil(a / k) * k; v <= b + 1e-9; v += k) out.push(+v.toPrecision(10)); return out; };
+    let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(s.title)}">`;
+    ticks(yl, yh, 5).forEach(v => svg += `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)" stroke-width="1" opacity=".6"/><text x="${m.l - 6}" y="${Y(v) + 4}" text-anchor="end" font-size="11" font-family="var(--f-mono)" fill="var(--muted)">${+v.toPrecision(4)}</text>`);
+    ticks(xl, xh, 7).forEach(v => svg += `<text x="${X(v)}" y="${H - m.b + 16}" text-anchor="middle" font-size="11" font-family="var(--f-mono)" fill="var(--muted)">${+v.toPrecision(4)}</text>`);
+    svg += `<line x1="${m.l}" x2="${W - m.r}" y1="${H - m.b}" y2="${H - m.b}" stroke="var(--muted)" stroke-width="1"/>`;
+    svg += `<text x="${(m.l + W - m.r) / 2}" y="${H - 4}" text-anchor="middle" font-size="12" fill="var(--muted)">${esc(s.xlabel || '')}</text>`;
+    (s.marks || []).filter(v => v >= xl && v <= xh).forEach(v => svg += `<line x1="${X(v)}" x2="${X(v)}" y1="${m.t}" y2="${H - m.b}" stroke="var(--muted)" stroke-dasharray="3 4" stroke-width="1.2"/>`);
+    s.lines.forEach((l, li) => {
+      const c = `var(${PAL[li % PAL.length]})`;
+      if (l.style === 'dots') l.x.forEach((x, i) => { if (l.y[i] !== null) svg += `<circle cx="${X(x).toFixed(1)}" cy="${Y(l.y[i]).toFixed(1)}" r="2.2" fill="${c}"/>`; });
+      else { let d = ''; l.x.forEach((x, i) => { const y = l.y[i]; if (y === null) return; d += (d ? 'L' : 'M') + X(x).toFixed(1) + ',' + Y(y).toFixed(1); }); svg += `<path d="${d}" fill="none" stroke="${c}" stroke-width="2" stroke-linejoin="round"/>`; }
+    });
+    svg += `<line class="xh" x1="0" x2="0" y1="${m.t}" y2="${H - m.b}" stroke="var(--ink)" stroke-width="1" opacity="0"/><rect x="${m.l}" y="${m.t}" width="${W - m.l - m.r}" height="${H - m.t - m.b}" fill="transparent"/></svg>`;
+    const leg = s.lines.length > 1 || (s.marks && s.marks.length) ? `<div class="legend">${s.lines.length > 1 ? s.lines.map((l, li) => `<span><span class="sw" style="background:var(${PAL[li % PAL.length]})"></span>${esc(l.name)}</span>`).join('') : ''}${s.marks && s.marks.length ? '<span><span class="sw" style="background:none;border-left:2px dashed var(--muted);border-radius:0"></span>эталон (теория)</span>' : ''}</div>` : '';
+    div.innerHTML = `<div class="t">${esc(s.title)}</div>${svg}${leg}`;
+    const el = div.querySelector('svg'), cross = el.querySelector('.xh'), tip = $('tip');
+    el.addEventListener('pointermove', ev => {
+      const b = el.getBoundingClientRect(), sx = (ev.clientX - b.left) * W / b.width; if (sx < m.l || sx > W - m.r) { tip.style.display = 'none'; cross.setAttribute('opacity', 0); return; }
+      const xv = xl + (sx - m.l) / (W - m.l - m.r) * (xh - xl);
+      xhLine(cross, X(xv));
+      const rows = s.lines.map((l, li) => { let bi = 0, bd = Infinity; l.x.forEach((x, i) => { const d = Math.abs(x - xv); if (d < bd && l.y[i] !== null) { bd = d; bi = i; } });
+        return `<span style="color:var(${PAL[li % PAL.length]})">■</span> ${esc(l.name)}: ${fmt(l.y[bi], '{:.4f}')}`; });
+      tip.innerHTML = `${esc(s.xlabel || 'x')} = ${fmt(xv, '{:.3f}')}<br>` + rows.join('<br>');
+      tip.style.display = 'block'; tip.style.left = Math.min(ev.pageX + 14, document.documentElement.scrollWidth - tip.offsetWidth - 8) + 'px'; tip.style.top = (ev.pageY + 14) + 'px';
+    });
+    el.addEventListener('pointerleave', () => { tip.style.display = 'none'; cross.setAttribute('opacity', 0); });
+  });
+}
+function xhLine(el, x) { el.setAttribute('x1', x); el.setAttribute('x2', x); el.setAttribute('opacity', .35); }
+
+// ---------- прогоны и очередь ----------
+function renderRuns() {
+  const rs = S.runs.filter(r => S.exp && r.exp === S.exp.id);
+  $('runs').innerHTML = rs.length ? rs.slice(0, 40).map(r => `<button class="run ${S.run && S.run.id === r.id ? 'on' : ''}" data-id="${r.id}">
+      <b>${esc(r.saved || r.id)}</b> <span class="st ok">${r.ok}✓</span> <span class="st near">${r.near}≈</span> <span class="st off">${r.off}✗</span>
+      <small>${esc(Object.entries(r.params || {}).map(([k, v]) => k + '=' + v).join(' '))} · ${r.seconds} с</small></button>`).join('') +
+      (S.run ? `<button class="ghost pinbtn" id="pin">${S.pinned && S.pinned.id === S.run.id ? 'открепить' : 'закрепить для сравнения'}</button>` : '')
+    : '<div class="empty">' + (MODE === 'live' ? 'ещё нет — нажмите «Посчитать»' : 'в этом просмотрщике нет прогона этого опыта') + '</div>';
+  $('runs').querySelectorAll('.run').forEach(b => b.onclick = () => showRun(b.dataset.id));
+  const pb = $('pin'); if (pb) pb.onclick = () => { S.pinned = S.pinned && S.pinned.id === S.run.id ? null : S.run; renderRuns(); renderResult(); };
+}
+function renderJobs() {
+  const js = S.jobs.slice(0, 8);
+  $('jobs').innerHTML = js.length ? js.map(j => {
+    const e = S.cat.find(e => e.id === j.exp), t = j.status === 'running' ? `считается ${Math.round(Date.now() / 1000 - j.started)} с` : j.status === 'queued' ? 'в очереди' : j.status === 'done' ? `готово за ${j.seconds} с` : 'ошибка';
+    return `<button class="run" data-run="${j.run || ''}" data-exp="${j.exp}"><b>${esc(e ? e.title : j.exp)}</b><small class="${j.status === 'error' ? 'status err' : ''}">${t}${j.error ? ' — ' + esc(j.error) : ''}</small></button>`; }).join('')
+    : '<div class="empty">' + (MODE === 'live' ? 'пусто' : 'в просмотрщике счёта нет') + '</div>';
+  $('jobs').querySelectorAll('.run').forEach(b => b.onclick = async () => { if (!b.dataset.run) return; if (!S.exp || S.exp.id !== b.dataset.exp) await selectExp(b.dataset.exp, true); showRun(b.dataset.run); });
+}
+let polling = null, known = new Set();
+async function poll() {
+  try { S.jobs = await api.jobs(); } catch (e) { return; }
+  let fresh = null; S.jobs.forEach(j => { if (j.status === 'done' && !known.has(j.id)) { known.add(j.id); fresh = j; } if (j.status === 'error' && !known.has(j.id)) { known.add(j.id); $('jobstatus').textContent = 'ошибка: ' + j.error; $('jobstatus').className = 'status err'; } });
+  renderJobs();
+  if (fresh) { S.runs = await api.runs(); renderCatalog(); if (S.exp && fresh.exp === S.exp.id) { $('jobstatus').textContent = `готово за ${fresh.seconds} с`; $('jobstatus').className = 'status'; await showRun(fresh.run); } else renderRuns(); }
+  const busy = S.jobs.some(j => j.status === 'queued' || j.status === 'running');
+  clearTimeout(polling); polling = setTimeout(poll, busy ? 1000 : 4000);
+}
+$('go').onclick = async () => {
+  if (MODE !== 'live') return;
+  const body = { exp: S.exp.id, params: S.params, region: S.exp.region ? S.region : null };
+  const r = await api.start(body); if (r.error) { $('jobstatus').textContent = r.error; $('jobstatus').className = 'status err'; return; }
+  $('jobstatus').className = 'status'; $('jobstatus').textContent = `поставлено в очередь (${S.exp.cost || '…'})`; poll();
+};
+
+// ---------- тема ----------
+$('theme').onclick = () => {
+  const root = document.documentElement, dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  root.dataset.theme = dark ? 'light' : 'dark'; try { localStorage.setItem('goldlab-theme', root.dataset.theme); } catch (e) {}
+  drawWorld(); renderCharts();
+};
+try { const t = localStorage.getItem('goldlab-theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+
+// ---------- старт ----------
+(async function boot() {
+  $('mode').textContent = MODE === 'live' ? 'пульт · сервер на связи' : 'просмотрщик · готовые прогоны';
+  if (MODE === 'live') $('mode').classList.add('live');
+  if (MODE !== 'live' && !DATA) { $('title').textContent = 'Нет данных'; $('what').textContent = 'Откройте через python -m goldlab.server или соберите просмотрщик: python -m goldlab.server --export viewer.html'; return; }
+  S.cat = await api.catalog(); S.runs = await api.runs();
+  const want = decodeURIComponent(location.hash.slice(1)); await selectExp(S.cat.find(e => e.id === want) ? want : S.cat[0].id);
+  renderJobs(); if (MODE === 'live') poll();
+})();
+</script>
+</body>
+</html>

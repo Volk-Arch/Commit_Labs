@@ -1,0 +1,22 @@
+M = 0.1, ω = 0.25, r = 10.0, τ = 6.0, v = 0.8; crystal; ромбов 600
+   вдоль r: 120 ромбов, δ = +0.00304 ± 0.00053  [823 с]
+   вдоль r: 240 ромбов, δ = +0.00331 ± 0.00038  [1661 с]
+   вдоль r: 360 ромбов, δ = +0.00297 ± 0.00031  [2529 с]
+   вдоль r: 480 ромбов, δ = +0.00311 ± 0.00027  [3389 с]
+Traceback (most recent call last):
+  File "/home/claude/code/blackcut.py", line 252, in <module>
+    d.append(one(Mv, kind, rs, crystal=(what == 'crystal')))
+             ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/claude/code/blackcut.py", line 169, in one
+    Xa = gen_points_frame(hole, c_ar, hd, B, Lm, sh, rw, prefilter, disp=(0.75 if M > 0 else 0.05))
+  File "/home/claude/code/blackcut.py", line 217, in gen_points_frame
+    t2, X2, n2 = project(hole, P, iters=2)              # две итерации -> точный отсев
+                 ~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/home/claude/code/blackcut.py", line 69, in project
+    du = np.linalg.solve(g, DE @ d[..., None])[..., 0]
+         ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/dist-packages/numpy/linalg/_linalg.py", line 463, in solve
+    r = gufunc(a, b, signature=signature)
+  File "/usr/local/lib/python3.13/dist-packages/numpy/linalg/_linalg.py", line 144, in _raise_linalgerror_singular
+    raise LinAlgError("Singular matrix")
+numpy.linalg.LinAlgError: Singular matrix
